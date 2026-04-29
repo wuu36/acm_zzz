@@ -10,6 +10,11 @@ from .transforms import (
     abc_to_dq,
     dq_to_abc,
 )
+from .dynamics import (
+    dynamics_machine,
+    dynamics_machine_current_source,
+    dynamics_only_mechanical,
+)
 
 __all__ = [
     "MachineParams",
@@ -20,4 +25,7 @@ __all__ = [
     "inverse_park",
     "abc_to_dq",
     "dq_to_abc",
+    "dynamics_machine",
+    "dynamics_machine_current_source",
+    "dynamics_only_mechanical",
     ]
