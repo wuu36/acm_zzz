@@ -15,6 +15,13 @@ from .dynamics import (
     dynamics_machine_current_source,
     dynamics_only_mechanical,
 )
+from .integrator import (
+    rk4_step,
+    rk4_integrate,
+    rk4_integrate_with_controller,
+    rk4_step_simple,
+    euler_step,
+)
 
 __all__ = [
     "MachineParams",
@@ -28,4 +35,9 @@ __all__ = [
     "dynamics_machine",
     "dynamics_machine_current_source",
     "dynamics_only_mechanical",
+    "rk4_step",
+    "rk4_integrate",
+    "rk4_integrate_with_controller",
+    "rk4_step_simple",
+    "euler_step",
     ]
