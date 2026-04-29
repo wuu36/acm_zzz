@@ -2,6 +2,7 @@
 
 from .machine_params import MachineParams
 from .machine_state import MachineState
+from .machine import ACMachine
 from .transforms import (
     clarke_transform,
     park_transform,
@@ -13,6 +14,7 @@ from .transforms import (
 __all__ = [
     "MachineParams",
     "MachineState",
+    "ACMachine",
     "clarke_transform",
     "park_transform",
     "inverse_park",
