@@ -257,3 +257,129 @@ def test_pi_tracking_error_history():
     reg.execute()
     assert reg.Err == 3.0
     assert reg.ErrPrev == 3.0
+
+# Additional PID tests for Phase 12
+
+def test_pid_integral_accumulation():
+    """Test PID integral accumulation."""
+    reg = PIDRegulator(
+        Kp=0.0, Ki=100.0, Kd=0.0, tau=0.01,
+        OutLimit=1000.0, IntLimit=500.0, T=0.001
+    )
+    reg.Ref = 10.0
+    reg.Fbk = 0.0
+
+    # Execute 10 steps with constant error
+    for _ in range(10):
+        reg.execute()
+
+    # Integral: Ki * error * T * steps = 100 * 10 * 0.001 * 10 = 10
+    assert pytest.approx(reg.integrator, rel=1e-6) == 10.0
+
+
+def test_pid_derivative_response():
+    """Test PID derivative term response to changing measurement."""
+    reg = PIDRegulator(
+        Kp=0.0, Ki=0.0, Kd=10.0, tau=0.001,
+        OutLimit=1000.0, IntLimit=500.0, T=0.001
+    )
+    reg.Ref = 0.0
+    reg.Fbk = 0.0
+    reg.prev_measurement = 10.0  # Previous measurement higher
+
+    reg.execute()
+
+    # Derivative: Kd * (prev_meas - meas) / T = 10 * (10 - 0) / 0.001 = 100000
+    # But filtered through tau, so less
+    assert reg.Out > 0.0  # Positive derivative output
+
+
+def test_pid_output_limit():
+    """Test PID output limiting."""
+    reg = PIDRegulator(
+        Kp=100.0, Ki=0.0, Kd=0.0, tau=0.01,
+        OutLimit=50.0, IntLimit=100.0, T=0.001
+    )
+    reg.Ref = 10.0
+    reg.Fbk = 0.0
+
+    reg.execute()
+
+    # P = 100 * 10 = 1000, limited to 50
+    assert pytest.approx(reg.Out, rel=1e-6) == 50.0
+
+
+def test_pid_negative_output():
+    """Test PID with negative output."""
+    reg = PIDRegulator(
+        Kp=10.0, Ki=0.0, Kd=0.0, tau=0.01,
+        OutLimit=100.0, IntLimit=50.0, T=0.001
+    )
+    reg.Ref = -10.0
+    reg.Fbk = 0.0
+
+    reg.execute()
+
+    assert pytest.approx(reg.Out, rel=1e-6) == -100.0
+
+
+def test_pid_combined_terms():
+    """Test PID with all three terms active."""
+    reg = PIDRegulator(
+        Kp=1.0, Ki=10.0, Kd=0.1, tau=0.01,
+        OutLimit=1000.0, IntLimit=500.0, T=0.001
+    )
+    reg.Ref = 10.0
+    reg.Fbk = 5.0
+    reg.prev_measurement = 5.0  # Set initial measurement to avoid derivative kick
+
+    # First step
+    reg.execute()
+
+    # P term: Kp * Err = 1 * 5 = 5
+    # I term: Ki * Err * T = 10 * 5 * 0.001 = 0.05 (accumulated)
+    # D term: filtered derivative (no change in measurement)
+    # Total should be approximately P + I = 5 + 0.05 = 5.05
+    assert reg.Out > 0.0  # Positive output
+    assert pytest.approx(reg.Out, rel=0.1) == 5.05
+
+
+def test_pid_derivative_on_measurement():
+    """Test PID derivative is on measurement (not reference)."""
+    reg = PIDRegulator(
+        Kp=0.0, Ki=0.0, Kd=100.0, tau=0.01,
+        OutLimit=1000.0, IntLimit=500.0, T=0.001
+    )
+
+    # Reference step (should not cause derivative kick)
+    reg.Ref = 10.0  # Step change in reference
+    reg.Fbk = 0.0
+    reg.prev_measurement = 0.0
+
+    reg.execute()
+
+    # Derivative on measurement: measurement unchanged, no derivative
+    # But prev_measurement - Fbk = 0 - 0 = 0
+    # So no derivative kick from reference step
+    assert pytest.approx(reg.differentiator, rel=1e-6) == 0.0
+
+
+def test_pid_step_sequence():
+    """Test PID through multiple steps."""
+    reg = PIDRegulator(
+        Kp=5.0, Ki=20.0, Kd=0.5, tau=0.005,
+        OutLimit=500.0, IntLimit=200.0, T=0.001
+    )
+    reg.Ref = 100.0
+
+    outputs = []
+    # Run simulation with slowly converging feedback
+    for i in range(50):
+        reg.Fbk = 50.0 + i  # Feedback increases slowly
+        reg.execute()
+        outputs.append(reg.Out)
+
+    # Output should change over time
+    assert outputs[-1] != outputs[0]
+    # Integrator should accumulate
+    assert reg.integrator != 0.0
