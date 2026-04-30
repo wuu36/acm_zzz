@@ -132,7 +132,7 @@ def incremental_pi(reg: PIRegulator):
         reg: PIRegulator instance to execute
     """
     reg.Err = reg.Ref - reg.Fbk
-    reg.Out = reg.OutPrev + reg.Kp * (reg.Err - reg.ErrPrev) + reg.Ki + reg.Err
+    reg.Out = reg.OutPrev + reg.Kp * (reg.Err - reg.ErrPrev) + reg.Ki * reg.Err
     
     # output limiting
     if reg.Out > reg.OutLimit:

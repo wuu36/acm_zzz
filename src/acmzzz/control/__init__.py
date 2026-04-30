@@ -8,14 +8,16 @@ from .controller_params import (
     design_current_pi_gains,
     auto_design_pi_gains,
 )
+from .foc import FOCController, foc_control
 
 __all__ = [
     "PIRegulator",
     "PIDRegulator",
     "ControllerParams",
     "FOCConfig",
-    # "FOCController",
+    "FOCController",
     "design_current_pi_gains",
     "design_speed_pi_gains",
     "auto_design_pi_gains",
+    "foc_control",
 ]

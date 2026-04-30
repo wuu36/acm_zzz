@@ -23,3 +23,18 @@ def controller_config():
         'VL_TS': 5e-4,      # 速度环采样周期 [s]
         'VL_ceiling': 5,    # 速度环降采样倍数
     }
+
+@pytest.fixture
+def foc_config():
+    """default FOC configuration for testing."""
+    return {
+        'CL_TS': 1e-4,
+        'VL_TS': 5e-4,
+        'VL_ceiling': 5,
+        'speed_Kp': 0.038,
+        'speed_Ki': 30.5,
+        'speed_limit': 10.0,
+        'current_Kp': 6.4,
+        'current_Ki': 1523.2,
+        'current_limit': 300.0,
+    }
