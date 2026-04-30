@@ -5,6 +5,7 @@ uv init
 uv sync
 uv sync --group dev
 uv sync --extra control
+uv sync --all-extras
 uv pip list
 ```
 
