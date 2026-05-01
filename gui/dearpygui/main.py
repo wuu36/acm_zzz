@@ -59,7 +59,7 @@ class MotorSimulationApp:
             self.plotting_manager.setup("MainWindow")
             
         # link GUI IDs to console
-        self.console.control_ids = self.control_manager.control_ids
+        # self.console.control_ids = self.control_manager.control_ids
         
         # setup viewport and maximize
         dpg.setup_dearpygui()

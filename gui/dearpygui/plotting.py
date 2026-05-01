@@ -24,6 +24,23 @@ def setup_plots(
                     [], [], label="Command", parent="y_axis_speed"
                 )
     dpg.add_separator(parent=parent)
+
+    # current plot
+    with dpg.group(parent=parent):
+        dpg.add_text("DQ Currents", parent=parent)
+        with dpg.plot(label="Current vs Time", height=400, width=-1, parent=parent):
+            dpg.add_plot_legend()
+            plot_ids['x_axis_current'] = dpg.add_plot_axis(
+                dpg.mvXAxis, label="Time [s]", tag="x_axis_current"
+            )
+            with dpg.plot_axis(dpg.mvYAxis, label="Current [A]", tag="y_axis_current"):
+                series_ids['id'] = dpg.add_line_series(
+                    [], [], label="iD", parent="y_axis_current"
+                )
+                series_ids['iq'] = dpg.add_line_series(
+                    [], [], label="iQ", parent="y_axis_current"
+                )
+                
     return plot_ids, series_ids    
 
 class PlottingManager:
