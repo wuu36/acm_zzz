@@ -19,6 +19,13 @@ $(TARGET): $(SRC)
 # Run simulation
 run: $(TARGET)
 	./$(TARGET)
+
+
+# Test
+test:
+	gcc -o test_rk4.exe test_rk4.c -lm
+	./test_rk4.exe
+
 	
 # Clean
 clean:
