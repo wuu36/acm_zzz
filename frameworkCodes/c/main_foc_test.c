@@ -6,6 +6,7 @@
 #include "ACMSim.h"
 #include "mian_switch.h"
 #include <math.h>
+#include <time.h>
 
 //============================================================================
 // Local Macros
@@ -21,6 +22,9 @@
 #define MACHINE_TS  (CL_TS / 1.0)
 #define NUMBER_OF_STEPS 10000   /* 1s simulation time */
 #define MACHINE_SIM_PER_CONTROL 1
+
+/* data file path */
+#define DATA_FILE_NAME "../dat/test_motor_foc.dat"
 
 //============================================================================
 // Local Types
@@ -68,6 +72,36 @@ int main(void) {
     printf("  Kp_d = %.2f, Ki_d = %.4f\n", PID_iD.Kp, PID_iD.Ki);
     printf("  Kp_q = %.2f, Ki_q = %.4f\n", PID_iQ.Kp, PID_iQ.Ki);
     printf("\nSimulation duration: %.1f s\n\n", NUMBER_OF_STEPS * CL_TS);
+
+    /* open data file */
+    FILE *fw = fopen(DATA_FILE_NAME, "w");
+    if (fw == NULL) {
+        printf("Error: Cannot open data file %s\n", DATA_FILE_NAME);
+        return 1;
+    }
+
+    /* Write header */
+    fprintf(fw, "time,varTheta,varOmega,iD,iQ,uD,uQ,cmd_iD,cmd_iQ,Tem,theta_d\n");
+    
+    clock_t begin = clock();
+
+    
+
+    clock_t end = clock();
+    fclose(fw);
+
+    /* final results */
+    printf("\n=== Simulation Complete ===\n");
+    printf("Final state at t=%.3f s:\n", ACM.timebase);
+    printf("  iD = %.4f A (cmd = %.1f A)\n", ACM.iDQ[0], CMD_ID);
+    printf("  iQ = %.4f A (cmd = %.1f A)\n", ACM.iDQ[1], CMD_IQ);
+    printf("  omega = %.2f rad/s\n", ACM.varOmega);
+    printf("  Tem = %.4f Nm\n", ACM.Tem);
+
+    printf("\nSimulation time: %.3f seconds\n", (REAL)(end - begin) / CLOCKS_PER_SEC);
+    printf("Data saved to: %s\n", DATA_FILE_NAME);
+
+    return 0;
 }
 
 void init_Machine(void) {
