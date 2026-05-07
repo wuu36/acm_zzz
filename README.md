@@ -23,6 +23,7 @@ build-backend = "hatchling.build"
 
 ```shell
 streamlit run st_main.py
+uv run streamlit run .\st_main.py
 ```
 
 

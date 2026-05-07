@@ -17,7 +17,6 @@ def streamlit_config():
         initial_sidebar_state="expanded"
     )
 
-
 def main():
     """streamlit主函数"""
     streamlit_config()
@@ -194,11 +193,31 @@ def main():
                         axes[1].set_ylabel('iQ [A]')
                         axes[1].set_title('Q-axis current')
                         axes[1].grid(True)
+
                     # 转矩
+                    if 'Tem' in df.columns:
+                        axes[2].plot(df['time'], df['Tem'], 'g-', linewidth=1)
+                        axes[2].set_ylabel('torque [Nm]')
+                        axes[2].set_xlabel('time [s]')
+                        axes[2].set_title('electromagnetic torque')
+                        axes[2].grid(True)
 
                     plt.tight_layout()
                     st.pyplot(fig)
 
+                    # 数据统计
+                    st.subheader("数据统计")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"数据点数：{len(df)}")
+                        st.write(f"仿真时长：{df['time'].iloc[-1]:.2f} s")
+                    with col2:
+                        if 'varOmega' in df.columns or 'omega' in df.columns:
+                            omega_col = df.get('varOmega', df.get('omega'))
+                        if 'Tem' in df.columns:
+                            st.write(f"稳态转矩: {df['Tem'].iloc[-100:].mean():.2f} rad/s")
+                        if 'Tem' in df.columns:
+                            st.write(f"稳态转矩: {df['Tem'].iloc[-100:].mean():.4f} Nm")
 
             except Exception as e:
                 st.error(f"读取数据失败: {e}")

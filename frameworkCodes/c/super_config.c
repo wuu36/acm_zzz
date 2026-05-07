@@ -10,7 +10,7 @@ void init_d_sim() {
     d_sim.simulation.CL_TS = 0.0001;
     d_sim.simulation.NUMBER_OF_STEPS = 100000;
     d_sim.simulation.MACHINE_SIM_PER_CONTROL = 1;
-    d_sim.simulation.MODE_SELECT = 4;
+    d_sim.simulation.MODE_SELECT = 11;
 
     strcpy(d_sim.motor.NAME, "SEW100W");
     d_sim.motor.npp = 4;
@@ -26,7 +26,7 @@ void init_d_sim() {
     d_sim.control.SPEED_BW = 10.0;
     d_sim.control.VL_EXE_PER_CL_EXE = 10;
 
-    d_sim.test.cmd_speed = 100.0;
+    d_sim.test.cmd_speed = 0.0;
     d_sim.test.cmd_iD = 0.0;
     d_sim.test.cmd_iQ = 0.0;
     d_sim.test.TLoad = 0.0;
