@@ -1,0 +1,129 @@
+//============================================================================
+//  Includes
+//============================================================================
+
+#include <stdio.h>
+#include "ACMSim.h"
+#include <math.h>
+
+//============================================================================
+// Local Macros
+//============================================================================
+
+/* test conditions */
+#define TEST_VOLTAGE_UD 0.0
+#define TEST_VOLTAGE_UQ 0.0
+
+/* simulation parameters */
+#define MACHINE_TS  (CL_TS / 1.0)
+#define NUMBER_OF_STEPS 10000   /* 1s simulation time */
+#define MACHINE_SIM_PER_CONTROL 1
+
+//============================================================================
+// Local Types
+//============================================================================
+
+//============================================================================
+// Local Variables
+//============================================================================
+
+//============================================================================
+// Public Types
+//============================================================================
+
+//============================================================================
+// Public Variables
+//============================================================================
+
+struct MachineSimulated ACM;
+
+//============================================================================
+// Local Function Prototypes
+//============================================================================
+
+void init_Machine(void);
+
+//============================================================================
+// Function declarations.
+//============================================================================
+
+int main(void) {
+    printf("=== Electric Machinery Simulation - FOC Test ===\n");
+}
+
+void init_Machine(void) {
+    /* Name plate data */
+    ACM.npp = TEST_MOTOR_NPP;
+    ACM.npp_inv = 1.0 / ACM.npp;
+    ACM.IN = TEST_MOTOR_IN;
+
+    /* Electrical parameters */
+    ACM.R = TEST_MOTOR_R;
+    ACM.Ld = TEST_MOTOR_LD;
+    ACM.Lq = TEST_MOTOR_LQ;
+    ACM.KE = TEST_MOTOR_KE;
+    ACM.KA = ACM.KE;
+    ACM.Rreq = TEST_MOTOR_RREQ;
+
+    /* Mechanical parameters */
+    ACM.Js = TEST_MOTOR_JS;
+    ACM.Js_inv = 1.0 / ACM.Js;
+
+    /* States initialization */
+    ACM.NS = MACHINE_NUMBER_OF_STATES;
+    for (int i = 0; i < ACM.NS; i++) {
+        ACM.x[i] = 0.0;
+        ACM.x_dot[i] = 0.0;
+    }
+
+    if (ACM.Rreq <= 0) {
+        ACM.x[2] = ACM.KE;
+    }
+
+    /* Inputs initialization */
+    ACM.uAB_dist[0] = 0.0;
+    ACM.uAB_dist[1] = 0.0;
+    ACM.uAB_inverter[0] = 0.0;
+    ACM.uAB_inverter[1] = 0.0;
+    ACM.uAB[0] = 0.0;
+    ACM.uAB[1] = 0.0;
+    ACM.uDQ[0] = TEST_VOLTAGE_UD;
+    ACM.uDQ[1] = TEST_VOLTAGE_UQ;
+    ACM.TLoad = 0.0;
+
+    /* Outputs initialization */
+    ACM.varTheta = 0.0;
+    ACM.varOmega = 0.0;
+    ACM.omega_syn = 0.0;
+    ACM.omega_slip = 0.0;
+    ACM.theta_d = 0.0;
+    ACM.iDQ[0] = 0.0;
+    ACM.iDQ[1] = 0.0;
+    ACM.iAB[0] = 0.0;
+    ACM.iAB[1] = 0.0;
+    ACM.psi_AB[0] = 0.0;
+    ACM.psi_AB[1] = 0.0;
+    ACM.emf_AB[0] = 0.0;
+    ACM.emf_AB[1] = 0.0;
+    ACM.iuvw[0] = 0.0;
+    ACM.iuvw[1] = 0.0;
+    ACM.iuvw[2] = 0.0;
+    ACM.Tem = 0.0;
+    ACM.cosT = cos(ACM.theta_d);
+    ACM.sinT = sin(ACM.theta_d);
+    ACM.cosT_delay_1p5omegaTs = ACM.cosT;
+    ACM.sinT_delay_1p5omegaTs = ACM.sinT;
+    ACM.powerfactor = 0.0;
+
+    /* Simulation settings */
+    ACM.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD = MACHINE_SIM_PER_CONTROL;
+    ACM.Ts = MACHINE_TS;
+    ACM.current_theta = 0.0;
+    ACM.voltage_theta = 0.0;
+
+    /* Time */
+    ACM.timebase = 0.0;
+
+}
+
+//-------------------- End of File -------------------------------------------
