@@ -10,6 +10,7 @@ dependencies = [
     "dearpygui>=2.3",
     "pyyaml",
     "streamlit",
+    "pandas",
 ]
 
 [project.optional-dependencies]

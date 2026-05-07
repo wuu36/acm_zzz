@@ -28,7 +28,7 @@ void init_d_sim() {
 
     d_sim.test.cmd_speed = 100.0;
     d_sim.test.cmd_iD = 0.0;
-    d_sim.test.cmd_iQ = 1.0;
+    d_sim.test.cmd_iQ = 0.0;
     d_sim.test.TLoad = 0.0;
     d_sim.test.TLoad_time = 0.1;
 
