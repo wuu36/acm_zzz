@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "ACMSim.h"
+#include "mian_switch.h"
 #include <math.h>
 
 //============================================================================
@@ -13,6 +14,8 @@
 /* test conditions */
 #define TEST_VOLTAGE_UD 0.0
 #define TEST_VOLTAGE_UQ 0.0
+#define CMD_ID 0.0
+#define CMD_IQ 1.0
 
 /* simulation parameters */
 #define MACHINE_TS  (CL_TS / 1.0)
@@ -49,6 +52,22 @@ void init_Machine(void);
 
 int main(void) {
     printf("=== Electric Machinery Simulation - FOC Test ===\n");
+    printf("Testing FOC current loop:\n");
+    printf("  cmd_iD = %.1f A\n", CMD_ID);
+    printf("  cmd_iQ = %.1f A\n", CMD_IQ);
+    printf("\n");
+
+    /* initialize motor and controller */
+    init_Machine();
+    init_CTRL();
+
+    printf("Motor parameters:\n");
+    printf("  npp = %d, R = %.3f Ohm, L = %.2f mH\n", ACM.npp, ACM.R, ACM.Lq*1000);
+    printf("  KE = %.4f Wb, Js = %.2e kg.m^2\n", ACM.KE, ACM.Js);
+    printf("\nPI parameters:\n");
+    printf("  Kp_d = %.2f, Ki_d = %.4f\n", PID_iD.Kp, PID_iD.Ki);
+    printf("  Kp_q = %.2f, Ki_q = %.4f\n", PID_iQ.Kp, PID_iQ.Ki);
+    printf("\nSimulation duration: %.1f s\n\n", NUMBER_OF_STEPS * CL_TS);
 }
 
 void init_Machine(void) {
