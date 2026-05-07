@@ -2,10 +2,10 @@
 import os
 
 import streamlit as st
-
 from super_config import SuperConfig
 import cplot
 import matplotlib.pyplot as plt
+import st_interact
 
 
 def streamlit_config():
@@ -98,7 +98,29 @@ def main():
     # 显示电机参数
     st.header("📊 电机参数")
     motor_params = config.get_motor_params(selected_motor)
-    if motor_params:
+
+    # 参数编辑开关
+    edit_mode = st.checkbox("启用参数编辑", value=False)
+    
+    if edit_mode and motor_params:
+        # 使用参数编辑器
+        edited_params = st_interact.motor_parameter_editor(motor_params)
+        st.session_state['edited_motor_params'] = edited_params
+
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("极对数", edited_params['npp'])
+            st.metric("电阻", f"{edited_params['R']} Ω")
+        with col2:
+            st.metric("电感Ld", f"{edited_params['Ld']*1000:.2f} mH")
+            st.metric("电感Lq", f"{edited_params['Lq']*1000:.2f} mH")
+        with col3:
+            st.metric("KE", f"{edited_params['KE']} Wb")
+            st.metric("惯量", f"{edited_params['Js']*1e6:.2f} μkg·m²")
+
+        st.info("参数已编辑, 点击运行仿真将使用修改后的参数")
+    elif motor_params:
+        # 显示默认参数
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("极对数", motor_params['npp'])
