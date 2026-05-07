@@ -1,5 +1,5 @@
-#ifndef _MIAN_SWITCH_H
-#define _MIAN_SWITCH_H
+#ifndef _MAIN_SWITCH_H
+#define _MAIN_SWITCH_H
 
 /*==============================================================================
     INCLUDES
@@ -12,6 +12,12 @@
     DEFINES
 ==============================================================================*/
 
+/* control mode definitions */
+#define MODE_SELECT_PWM_DIRECT          1
+#define MODE_SELECT_VOLTAGE_OPEN_LOOP   11
+#define MODE_SELECT_FOC                 3
+#define MODE_SELECT_VELOCITY_LOOP       4
+#define MODE_SELECT_POSITION_LOOP       5
 
 /*==============================================================================
     TYPES
@@ -76,6 +82,10 @@ extern PI_CONTROLLER PID_iD;
 extern PI_CONTROLLER PID_iQ;
 extern PI_CONTROLLER PID_Speed;
 
+extern st_controller_inputs CTRL_inputs;
+extern st_controller_states CTRL_states;
+extern st_controller_outputs CTRL_outputs;
+
 /*==============================================================================
     INLINE FUNCTION DEFINITIONS
 ==============================================================================*/
@@ -89,6 +99,10 @@ void init_motor_params(void);
 void init_PI_controllers(void);
 void init_CTRL(void);
 
+void main_switch(long mode_select);
 
-#endif /* _MIAN_SWITCH_H */
+/* core control functions */
+void _onlyFOC(REAL theta_d_elec, REAL iAB[2]);
+
+#endif /* _MAIN_SWITCH_H */
 /*-------------------- End of File -------------------------------------------*/

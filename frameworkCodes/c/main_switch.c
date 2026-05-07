@@ -3,7 +3,8 @@
 //============================================================================
 
 #include "ACMSim.h"
-#include "mian_switch.h"
+#include "main_switch.h"
+#include "math.h"
 
 
 //============================================================================
@@ -123,6 +124,58 @@ void init_CTRL(void) {
     CTRL_outputs.cmd_uDQ[1] = 0.0;
     CTRL_outputs.cmd_uAB[0] = 0.0;
     CTRL_outputs.cmd_uAB[1] = 0.0;
+}
+
+void main_switch(long mode_select) {
+    switch (mode_select)
+    {
+    case MODE_SELECT_PWM_DIRECT:
+        /* direct PWM output - bypass all control */
+        break;
+    case MODE_SELECT_VOLTAGE_OPEN_LOOP:
+        /* open-loop VVVF - voltage from debug settings */
+        break;
+    case MODE_SELECT_FOC:
+        /* FOC current loop only */
+        _onlyFOC(CTRL_inputs.theta_d_elec, CTRL_inputs.iAB);
+        break;
+    case MODE_SELECT_VELOCITY_LOOP:
+        /* velocity loop + FOC */
+        break;
+    case MODE_SELECT_POSITION_LOOP:
+        printf("position loop not implemented in phase 2");
+    default:
+        printf("unknown loop not implemented in phase 2\n");
+        break;
+    }
+}
+
+void _onlyFOC(REAL theta_d_elec, REAL iAB[2]) {
+    /* step 1: park transform - convert AB currents to DQ */
+    CTRL_states.cosT = cos(theta_d_elec);
+    CTRL_states.sinT = sin(theta_d_elec);
+
+    CTRL_inputs.iDQ[0] = AB2M(iAB[0], iAB[1], CTRL_states.cosT, CTRL_states.sinT);
+    CTRL_inputs.iDQ[1] = AB2T(iAB[0], iAB[1], CTRL_states.cosT, CTRL_states.sinT);
+
+    /* step 2: Current PI controllers */
+    PID_iD.Ref = CTRL_inputs.cmd_iDQ[0];
+    PID_iD.Fbk = CTRL_inputs.iDQ[0];
+    PI_MACRO(PID_iD);
+
+    PID_iQ.Ref = CTRL_inputs.cmd_iDQ[1];
+    PID_iQ.Fbk = CTRL_inputs.iDQ[1];
+    PI_MACRO(PID_iQ);
+
+    /* step 3: Output voltage (no decoupling for simplicity) */
+    CTRL_outputs.cmd_uDQ[0] = PID_iD.Out;
+    CTRL_outputs.cmd_uDQ[1] = PID_iQ.Out;
+
+    /* step 4: Inverse Park transform - convert DQ voltages to AB */
+    CTRL_outputs.cmd_uAB[0] = MT2A(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
+                                   CTRL_states.cosT, CTRL_states.sinT);
+    CTRL_outputs.cmd_uAB[1] = MT2B(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
+                                   CTRL_states.cosT, CTRL_states.sinT);
 }
 
 //-------------------- End of File -------------------------------------------

@@ -10,3 +10,9 @@ wheels/
 .venv
 
 .claude/
+
+# C compiled executables
+*.exe
+
+# Simulation output data
+frameworkCodes/dat/*.dat

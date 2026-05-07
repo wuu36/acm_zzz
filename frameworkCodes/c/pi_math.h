@@ -46,6 +46,22 @@ typedef struct {
     0.0     /* i1 */ \
 }
 
+/* Saturation macro */
+#define _IQsat(A, Pos, Neg)  (fmaxf(((fminf((A),(Pos)))),(Neg)))
+
+/* TI Style PI Macro - Grando Anti-Windup */
+#define PI_MACRO(v) \
+    /* proportional term */ \
+    v.up = (v.Kp * (v.Ref - v.Fbk)); \
+    \
+    /* integral term with anti-windup */ \
+    v.ui = (v.Out == v.v1) ? (v.Ki * v.up + v.i1) : v.i1; \
+    v.i1 = v.ui; \
+    \
+    /* control output */ \
+    v.v1 = v.up + v.ui; \
+    v.Out = _IQsat(v.v1, v.Umax, v.Umin);
+
 
 /*==============================================================================
     GLOBAL VARIABLE DECLARATIONS
