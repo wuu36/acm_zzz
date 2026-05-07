@@ -1,0 +1,64 @@
+# emachinery_fork User Configuration
+#
+# 配置仿真参数、电机选择、控制参数
+
+# ============================================
+# 仿真基本设置
+# ============================================
+simulation:
+  # 时间步长与仿真时长
+  sim.CL_TS: 1.0e-4
+  sim.NUMBER_OF_STEPS: 100000
+  sim.MACHINE_SIM_PER_CONTROL: 1
+
+  # 测试模式选择
+  # 1: PWM_DIRECT
+  # 11: VOLTAGE_OPEN_LOOP
+  # 3: FOC
+  # 4: VELOCITY_LOOP
+  sim.MODE_SELECT: 4
+
+# ============================================
+# 电机选择
+# ============================================
+motor:
+  motor.NAME: "SEW100W"
+  motor.npp: 4
+  motor.IN: 3.5
+  motor.R: 0.475
+  motor.Ld: 2.05e-3
+  motor.Lq: 2.05e-3
+  motor.KE: 0.0107
+  motor.Js: 3.5e-6
+  motor.Vdc: 48
+
+# ============================================
+# 控制参数
+# ============================================
+control:
+  # 电流环带宽 [Hz]
+  FOC.CURRENT_BW: 100.0
+  # 速度环带宽 [Hz]
+  FOC.SPEED_BW: 10.0
+  # 速度环执行频率比
+  FOC.VL_EXE_PER_CL_EXE: 10
+
+# ============================================
+# 测试指令
+# ============================================
+test:
+  # 速度指令 [rad/s]
+  test.cmd_speed: 100.0
+  # 电流指令 [A]
+  test.cmd_iD: 0.0
+  test.cmd_iQ: 1.0
+  # 负载转矩 [Nm]
+  test.TLoad: 0.0
+  test.TLoad_time: 0.1
+
+# ============================================
+# 数据输出设置
+# ============================================
+output:
+  output.DATA_FILE: "../dat/test_motor.dat"
+  output.verbose: True
