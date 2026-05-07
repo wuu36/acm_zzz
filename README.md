@@ -21,6 +21,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 ```
 
+```shell
+streamlit run st_main.py
+```
+
+
 ```python
 import pytest
 
