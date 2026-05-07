@@ -11,6 +11,8 @@
 // Local Macros
 //============================================================================
 
+#define VL_EXE_PER_CL_EXE 10    /* speed loop runs 10x slower than current loop */
+
 //============================================================================
 // Local Types
 //============================================================================
@@ -141,6 +143,10 @@ void main_switch(long mode_select) {
         break;
     case MODE_SELECT_VELOCITY_LOOP:
         /* velocity loop + FOC */
+        FOC_with_velocity_control(CTRL_inputs.theta_d_elec,
+                                CTRL_inputs.varOmega,
+                                CTRL_inputs.cmd_varOmega,
+                                CTRL_inputs.iAB);
         break;
     case MODE_SELECT_POSITION_LOOP:
         printf("position loop not implemented in phase 2");
@@ -176,6 +182,31 @@ void _onlyFOC(REAL theta_d_elec, REAL iAB[2]) {
                                    CTRL_states.cosT, CTRL_states.sinT);
     CTRL_outputs.cmd_uAB[1] = MT2B(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
                                    CTRL_states.cosT, CTRL_states.sinT);
+}
+
+void FOC_with_velocity_control(REAL theta_d_elec, REAL varOmega,
+                                REAL cmd_varOmega, REAL iAB[2]) {
+    /* step1: velocity controller generates iq command */
+    CTRL_inputs.cmd_iDQ[1] = _velocityController(cmd_varOmega, varOmega);
+
+    /* step2: id command (default: 0 for surface PMSM) */
+    CTRL_inputs.cmd_iDQ[0] = 0.0;
+
+    /* step 3: FOC current loop */
+    _onlyFOC(theta_d_elec, iAB);
+}
+
+REAL _velocityController(REAL cmd_varOmega, REAL varOmega) {
+    /* execute speed PI at lower rate */
+    if (++CTRL_states.vc_count >= VL_EXE_PER_CL_EXE) {
+        CTRL_states.vc_count = 0;
+
+        PID_Speed.Ref = cmd_varOmega;
+        PID_Speed.Fbk = varOmega;
+        PI_MACRO(PID_Speed);
+    }
+
+    return PID_Speed.Out;
 }
 
 //-------------------- End of File -------------------------------------------

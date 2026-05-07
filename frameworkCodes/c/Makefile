@@ -22,6 +22,8 @@ CFLAGS = -Wall -O2 -I.
 TARGET = main.exe
 
 TARGET_FOC = foc_test.exe
+TARGET_FOC_LOAD = foc_load_test.exe
+TARGET_VELOCITY = velocity_test.exe
 
 # Default target
 all: $(TARGET)
@@ -33,6 +35,14 @@ $(TARGET): $(SRC)
 # FOC test simulation
 $(TARGET_FOC): main_foc_test.c $(UTIL_SRC) $(CTRL_SRC)
 	$(CC) $(CFLAGS) -o $@ main_foc_test.c $(UTIL_SRC) $(CTRL_SRC) -lm
+	
+# FOC with load test simulation
+$(TARGET_FOC_LOAD): main_foc_load_test.c $(UTIL_SRC) $(CTRL_SRC)
+	$(CC) $(CFLAGS) -o $@ main_foc_load_test.c $(UTIL_SRC) $(CTRL_SRC) -lm
+
+# Velocity test simulation
+$(TARGET_VELOCITY): main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC)
+	$(CC) $(CFLAGS) -o $@ main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC) -lm
 
 # Run simulation
 run: $(TARGET)
@@ -42,12 +52,19 @@ run: $(TARGET)
 foc_test: $(TARGET_FOC)
 	./$(TARGET_FOC)
 
+# Build and run FOC with load test
+foc_load_test: $(TARGET_FOC_LOAD)
+	./$(TARGET_FOC_LOAD)
+
+# Build and run velocity test
+velocity_test: $(TARGET_VELOCITY)
+	./$(TARGET_VELOCITY)
+
 
 # Test
 test:
 	gcc -o test_rk4.exe test_rk4.c -lm
 	./test_rk4.exe
-
 	
 # Clean
 clean:

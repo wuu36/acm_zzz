@@ -103,6 +103,11 @@ void main_switch(long mode_select);
 
 /* core control functions */
 void _onlyFOC(REAL theta_d_elec, REAL iAB[2]);
+void FOC_with_velocity_control(REAL theta_d_elec, REAL varOmega,
+                                REAL cmd_varOmega, REAL iAB[2]);
+                                
+/* PI controller execution */
+REAL _velocityController(REAL cmd_varOmega, REAL varOmega);
 
 #endif /* _MAIN_SWITCH_H */
 /*-------------------- End of File -------------------------------------------*/
