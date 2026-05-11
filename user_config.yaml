@@ -52,6 +52,9 @@ test:
   # 电流指令 [A]
   test.cmd_iD: 0.0
   test.cmd_iQ: 1.0
+  # 开环电压指令 [V] (VVVF模式)
+  test.cmd_uD: 0.0
+  test.cmd_uQ: 5.0
   # 负载转矩 [Nm]
   test.TLoad: 0.0
   test.TLoad_time: 0.1

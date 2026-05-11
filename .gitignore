@@ -16,3 +16,9 @@ wheels/
 
 # Simulation output data
 frameworkCodes/dat/*.dat
+
+# Test output data and screenshots
+dat/
+
+# Debug files
+dat/pw_debug.*

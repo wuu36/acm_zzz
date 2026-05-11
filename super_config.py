@@ -95,8 +95,8 @@ class SuperConfig:
                     # 解析 key.section.item 格式
                     parts = key.split('.')
                     if len(parts) >= 2:
-                        # 取最后一部分作为结构体成员名
-                        member_name = parts[-1]
+                        # 取最后一部分作为结构体成员名，转小写避免与C宏冲突
+                        member_name = parts[-1].lower()
                         section_data[member_name] = val
                     else:
                         section_data[key] = val
@@ -186,7 +186,8 @@ class SuperConfig:
         return True
 
     def compile_simulation(self, target="velocity_test"):
-        make_cmd = ["make", target]
+        exe_name = f"{target}.exe"
+        make_cmd = ["make", "-B", exe_name]
         
         try:
             result = subprocess.run(

@@ -5,6 +5,7 @@
 #include "ACMSim.h"
 #include "main_switch.h"
 #include "pi_math.h"
+#include "super_config.h"
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
@@ -15,21 +16,10 @@
 //============================================================================
 
 /* Simulation parameters */
-#define MACHINE_TS (CL_TS / 1.0)
-#define NUMBER_OF_STEPS 100000    /* 10秒仿真 */
 #define MACHINE_SIM_PER_CONTROL 1
 
 /* Data file path */
 #define DATA_FILE_NAME "../dat/test_motor_foc_load.dat"
-
-/* Test conditions */
-#define CMD_ID 0.0             /* D-axis current command [A] */
-#define CMD_IQ 1.0             /* Q-axis current command [A] */
-/* 方案A: 负载匹配电流指令
-   TLoad = cmd_iQ × 1.5 × npp × KE = 1.0 × 1.5 × 4 × 0.0107 = 0.0642 Nm */
-#define LOAD_TORQUE 0.0642     /* Load torque [Nm] - matches cmd_iQ=1A */
-// #define LOAD_TORQUE 0.08     /* Load torque [Nm] - matches cmd_iQ=1A */
-#define LOAD_APPLY_TIME 0.1    /* Apply load at t=0.1s */
 
 
 //============================================================================
@@ -85,7 +75,7 @@ void init_Machine(void) {
     ACM.theta_d = 0.0;
     ACM.cosT = 1.0;
     ACM.sinT = 0.0;
-    ACM.Ts = MACHINE_TS;
+    ACM.Ts = d_sim.simulation.cl_ts;
     ACM.timebase = 0.0;
 }
 
@@ -150,9 +140,11 @@ int machine_simulation(void) {
 
 
 int main(void) {
+    init_d_sim();
+
     printf("=== FOC Test with Load ===\n");
-    printf("验证: cmd_iQ=%.1f A, TLoad=%.3f Nm (t=%.2f s)\n\n", CMD_IQ, LOAD_TORQUE, LOAD_APPLY_TIME);
-    
+    printf("验证: cmd_iQ=%.1f A, TLoad=%.3f Nm (t=%.2f s)\n\n", d_sim.test.cmd_iq, d_sim.test.tload, d_sim.test.tload_time);
+
     init_Machine();
     init_CTRL();
 
@@ -165,11 +157,11 @@ int main(void) {
 
     int load_applied = 0;
 
-    for (int step = 0; step < NUMBER_OF_STEPS; step++) {
-        ACM.timebase = step * CL_TS;
+    for (int step = 0; step < d_sim.simulation.number_of_steps; step++) {
+        ACM.timebase = step * d_sim.simulation.cl_ts;
 
-        if (ACM.timebase >= LOAD_APPLY_TIME && !load_applied) {
-            ACM.TLoad = LOAD_TORQUE;
+        if (ACM.timebase >= d_sim.test.tload_time && !load_applied) {
+            ACM.TLoad = d_sim.test.tload;
             load_applied = 1;
             printf(">>> Load applied: TLoad=%.3f Nm at t=%.3f s\n", ACM.TLoad, ACM.timebase);
         }
@@ -177,8 +169,8 @@ int main(void) {
         CTRL_inputs.theta_d_elec = ACM.theta_d;
         CTRL_inputs.iAB[0] = ACM.iAB[0];
         CTRL_inputs.iAB[1] = ACM.iAB[1];
-        CTRL_inputs.cmd_iDQ[0] = CMD_ID;
-        CTRL_inputs.cmd_iDQ[1] = CMD_IQ;
+        CTRL_inputs.cmd_iDQ[0] = d_sim.test.cmd_id;
+        CTRL_inputs.cmd_iDQ[1] = d_sim.test.cmd_iq;
 
         /* FOC控制 */
         main_switch(MODE_SELECT_FOC);
@@ -191,7 +183,7 @@ int main(void) {
         fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
             ACM.timebase, ACM.varOmega, ACM.iDQ[0], ACM.iDQ[1],
             CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
-            CMD_ID, CMD_IQ, ACM.Tem, ACM.TLoad);
+            d_sim.test.cmd_id, d_sim.test.cmd_iq, ACM.Tem, ACM.TLoad);
 
         if (step % 20000 == 0) {
             printf("t=%.2f s: omega=%.1f rad/s, iQ=%.3f A, Tem=%.4f Nm\n",
@@ -204,8 +196,8 @@ int main(void) {
     
     printf("\n=== Results ===\n");
     printf("Final: omega=%.2f rad/s, iQ=%.4f A (cmd=%.1f), Tem=%.4f Nm\n",
-           ACM.varOmega, ACM.iDQ[1], CMD_IQ, ACM.Tem);
-    printf("iQ error: %.2f%%\n", fabs(ACM.iDQ[1]-CMD_IQ)/CMD_IQ*100);
+           ACM.varOmega, ACM.iDQ[1], d_sim.test.cmd_iq, ACM.Tem);
+    printf("iQ error: %.2f%%\n", fabs(ACM.iDQ[1]-d_sim.test.cmd_iq)/d_sim.test.cmd_iq*100);
     printf("Time: %.3f s\n\n", (REAL)(end-begin)/CLOCKS_PER_SEC);
 }
 

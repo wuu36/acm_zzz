@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "ACMSim.h"
 #include "main_switch.h"
+#include "super_config.h"
 #include <math.h>
 #include <time.h>
 
@@ -15,12 +16,8 @@
 /* test conditions */
 #define TEST_VOLTAGE_UD 0.0
 #define TEST_VOLTAGE_UQ 0.0
-#define CMD_ID 0.0
-#define CMD_IQ 1.0
 
 /* simulation parameters */
-#define MACHINE_TS  (CL_TS / 1.0)
-#define NUMBER_OF_STEPS 10000   /* 1s simulation time */
 #define MACHINE_SIM_PER_CONTROL 1
 
 /* data file path */
@@ -59,10 +56,12 @@ void DYNAMICS_MACHINE(REAL t, REAL x[], REAL fx[]);
 //============================================================================
 
 int main(void) {
+    init_d_sim();
+
     printf("=== Electric Machinery Simulation - FOC Test ===\n");
     printf("Testing FOC current loop:\n");
-    printf("  cmd_iD = %.1f A\n", CMD_ID);
-    printf("  cmd_iQ = %.1f A\n", CMD_IQ);
+    printf("  cmd_iD = %.1f A\n", d_sim.test.cmd_id);
+    printf("  cmd_iQ = %.1f A\n", d_sim.test.cmd_iq);
     printf("\n");
 
     /* initialize motor and controller */
@@ -75,7 +74,7 @@ int main(void) {
     printf("\nPI parameters:\n");
     printf("  Kp_d = %.2f, Ki_d = %.4f\n", PID_iD.Kp, PID_iD.Ki);
     printf("  Kp_q = %.2f, Ki_q = %.4f\n", PID_iQ.Kp, PID_iQ.Ki);
-    printf("\nSimulation duration: %.1f s\n\n", NUMBER_OF_STEPS * CL_TS);
+    printf("\nSimulation duration: %.1f s\n\n", d_sim.simulation.number_of_steps * d_sim.simulation.cl_ts);
 
     /* open data file */
     FILE *fw = fopen(DATA_FILE_NAME, "w");
@@ -96,12 +95,12 @@ int main(void) {
     /* main simulation loop */
     int step;
 
-    for (step = 0; step < NUMBER_OF_STEPS; step++) {
-        ACM.timebase = step * CL_TS;
+    for (step = 0; step < d_sim.simulation.number_of_steps; step++) {
+        ACM.timebase = step * d_sim.simulation.cl_ts;
 
         /* set current commands */
-        CTRL_inputs.cmd_iDQ[0] = CMD_ID;
-        CTRL_inputs.cmd_iDQ[1] = CMD_IQ;
+        CTRL_inputs.cmd_iDQ[0] = d_sim.test.cmd_id;
+        CTRL_inputs.cmd_iDQ[1] = d_sim.test.cmd_iq;
 
         /* update controller inputs from motor */
         CTRL_inputs.theta_d_elec = ACM.theta_d;
@@ -139,7 +138,7 @@ int main(void) {
         /* Progress indicator */
         if (step % 1000 == 0) {
             printf("Step %d (%.1f%%): iD=%.3f A, iQ=%.3f A, omega=%.2f rad/s\n",
-                   step, 100.0 * step / NUMBER_OF_STEPS,
+                   step, 100.0 * step / d_sim.simulation.number_of_steps,
                    ACM.iDQ[0], ACM.iDQ[1], ACM.varOmega);
         }
     }
@@ -152,8 +151,8 @@ int main(void) {
     /* final results */
     printf("\n=== Simulation Complete ===\n");
     printf("Final state at t=%.3f s:\n", ACM.timebase);
-    printf("  iD = %.4f A (cmd = %.1f A)\n", ACM.iDQ[0], CMD_ID);
-    printf("  iQ = %.4f A (cmd = %.1f A)\n", ACM.iDQ[1], CMD_IQ);
+    printf("  iD = %.4f A (cmd = %.1f A)\n", ACM.iDQ[0], d_sim.test.cmd_id);
+    printf("  iQ = %.4f A (cmd = %.1f A)\n", ACM.iDQ[1], d_sim.test.cmd_iq);
     printf("  omega = %.2f rad/s\n", ACM.varOmega);
     printf("  Tem = %.4f Nm\n", ACM.Tem);
 
@@ -228,8 +227,8 @@ void init_Machine(void) {
     ACM.powerfactor = 0.0;
 
     /* Simulation settings */
-    ACM.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD = MACHINE_SIM_PER_CONTROL;
-    ACM.Ts = MACHINE_TS;
+    ACM.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD = d_sim.simulation.machine_sim_per_control;
+    ACM.Ts = d_sim.simulation.cl_ts;
     ACM.current_theta = 0.0;
     ACM.voltage_theta = 0.0;
 

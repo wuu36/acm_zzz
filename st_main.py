@@ -71,6 +71,8 @@ def main():
                 key="cmd_speed"
             )
             cmd_iq = 0.0
+            cmd_uD = 0.0
+            cmd_uQ = 0.0
         elif mode == "FOC电流":
             cmd_iq = st.number_input(
                 "Q轴电流指令 [A]",
@@ -78,7 +80,19 @@ def main():
                 key="cmd_iq"
             )
             cmd_speed = 0.0
+            cmd_uD = 0.0
+            cmd_uQ = 0.0
         else:
+            cmd_uD = st.number_input(
+                "D轴电压指令 [V]",
+                value=0.0,
+                key="cmd_uD"
+            )
+            cmd_uQ = st.number_input(
+                "Q轴电压指令 [V]",
+                value=5.0,
+                key="cmd_uQ"
+            )
             cmd_speed = 0.0
             cmd_iq = 0.0
 
@@ -144,6 +158,8 @@ def main():
             config.user_config['test']['test.cmd_speed'] = cmd_speed
             config.user_config['test']['test.cmd_iQ'] = cmd_iq
             config.user_config['test']['test.TLoad'] = tload
+            config.user_config['test']['test.cmd_uD'] = cmd_uD
+            config.user_config['test']['test.cmd_uQ'] = cmd_uQ
 
             # 模式映射
             mode_map = {"开环VVVF": 11, "FOC电流": 3, "速度控制": 4}
@@ -158,6 +174,8 @@ def main():
                 target = "velocity_test"
             elif mode == "FOC电流" and tload > 0:
                 target = "foc_load_test"
+            elif mode == "开环VVVF":
+                target = "velocity_test"
             else:
                 target = "velocity_test"
             

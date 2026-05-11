@@ -8,15 +8,22 @@
 
 
 typedef struct {
-    REAL CL_TS;
-    long NUMBER_OF_STEPS;
-    long MACHINE_SIM_PER_CONTROL;
-    long MODE_SELECT;
+    REAL cl_ts;
+    long number_of_steps;
+    long machine_sim_per_control;
+    long mode_select;
 } ST_SIMULATION;
 
 typedef struct {
-    char NAME[128];
+    char name[128];
     long npp;
+    REAL in;
+    REAL r;
+    REAL ld;
+    REAL lq;
+    REAL ke;
+    REAL js;
+    long vdc;
     REAL IN;
     REAL R;
     REAL Ld;
@@ -24,24 +31,27 @@ typedef struct {
     REAL KE;
     REAL Js;
     long Vdc;
+    char NAME[128];
 } ST_MOTOR;
 
 typedef struct {
-    REAL CURRENT_BW;
-    REAL SPEED_BW;
-    long VL_EXE_PER_CL_EXE;
+    REAL current_bw;
+    REAL speed_bw;
+    long vl_exe_per_cl_exe;
 } ST_CONTROL;
 
 typedef struct {
     REAL cmd_speed;
-    REAL cmd_iD;
-    REAL cmd_iQ;
-    REAL TLoad;
-    REAL TLoad_time;
+    REAL cmd_id;
+    REAL cmd_iq;
+    REAL cmd_ud;
+    REAL cmd_uq;
+    REAL tload;
+    REAL tload_time;
 } ST_TEST;
 
 typedef struct {
-    char DATA_FILE[128];
+    char data_file[128];
     BOOL verbose;
 } ST_OUTPUT;
 

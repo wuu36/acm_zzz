@@ -4,6 +4,7 @@
 
 #include "ACMSim.h"
 #include "main_switch.h"
+#include "super_config.h"
 #include "math.h"
 
 
@@ -50,16 +51,16 @@ st_controller_outputs CTRL_outputs;
 //============================================================================
 
 void init_motor_params(void) {
-    motor_params.R = TEST_MOTOR_R;
-    motor_params.Ld = TEST_MOTOR_LD;
-    motor_params.Lq = TEST_MOTOR_LQ;
-    motor_params.Ld_inv = 1.0 / TEST_MOTOR_LD;
-    motor_params.Lq_inv = 1.0 / TEST_MOTOR_LQ;
-    motor_params.KE = TEST_MOTOR_KE;
-    motor_params.npp = TEST_MOTOR_NPP;
-    motor_params.npp_inv = 1.0 / TEST_MOTOR_NPP;
-    motor_params.Js = TEST_MOTOR_JS;
-    motor_params.Js_inv = 1.0 / TEST_MOTOR_JS;
+    motor_params.R = d_sim.motor.R;
+    motor_params.Ld = d_sim.motor.Ld;
+    motor_params.Lq = d_sim.motor.Lq;
+    motor_params.Ld_inv = 1.0 / d_sim.motor.Ld;
+    motor_params.Lq_inv = 1.0 / d_sim.motor.Lq;
+    motor_params.KE = d_sim.motor.KE;
+    motor_params.npp = d_sim.motor.npp;
+    motor_params.npp_inv = 1.0 / d_sim.motor.npp;
+    motor_params.Js = d_sim.motor.Js;
+    motor_params.Js_inv = 1.0 / d_sim.motor.Js;
 
     CTRL.motor = &motor_params;
 }
@@ -71,19 +72,19 @@ void init_PI_controllers(void) {
     /* D-axis current PI */
     PID_iD.Kp = motor_params.Ld * BW_current * 2 * M_PI;
     PID_iD.Ki = PID_iD.Kp * motor_params.R / motor_params.Ld * CL_TS;
-    PID_iD.Umax = TEST_MOTOR_VDC / 2.0;
+    PID_iD.Umax = d_sim.motor.Vdc / 2.0;
     PID_iD.Umin = -PID_iD.Umax;
 
     /* Q-axis current PI */
     PID_iQ.Kp = motor_params.Lq * BW_current * 2 * M_PI;
     PID_iQ.Ki = PID_iQ.Kp * motor_params.R / motor_params.Lq * CL_TS;
-    PID_iQ.Umax = TEST_MOTOR_VDC / 2.0;
+    PID_iQ.Umax = d_sim.motor.Vdc / 2.0;
     PID_iQ.Umin = -PID_iQ.Umax;
 
     /* Speed PI */
     PID_Speed.Kp = motor_params.Js * BW_speed * 2 * M_PI;
     PID_Speed.Ki = PID_Speed.Kp * BW_speed * 2 * M_PI * CL_TS;
-    PID_Speed.Umax = TEST_MOTOR_IN;  /* Limit to rated current */
+    PID_Speed.Umax = d_sim.motor.IN;  /* Limit to rated current */
     PID_Speed.Umin = -PID_Speed.Umax;
 
     /* assign PI controllers to state structure */
@@ -115,6 +116,8 @@ void init_CTRL(void) {
     CTRL_inputs.cmd_varOmega = 0.0;
     CTRL_inputs.cmd_iDQ[0] = 0.0;
     CTRL_inputs.cmd_iDQ[1] = 0.0;
+    CTRL_inputs.cmd_uDQ[0] = 0.0;
+    CTRL_inputs.cmd_uDQ[1] = 0.0;
 
     /* Initialize states */
     CTRL_states.cosT = 1.0;
@@ -135,7 +138,14 @@ void main_switch(long mode_select) {
         /* direct PWM output - bypass all control */
         break;
     case MODE_SELECT_VOLTAGE_OPEN_LOOP:
-        /* open-loop VVVF - voltage from debug settings */
+        CTRL_states.cosT = cos(CTRL_inputs.theta_d_elec);
+        CTRL_states.sinT = sin(CTRL_inputs.theta_d_elec);
+        CTRL_outputs.cmd_uDQ[0] = CTRL_inputs.cmd_uDQ[0];
+        CTRL_outputs.cmd_uDQ[1] = CTRL_inputs.cmd_uDQ[1];
+        CTRL_outputs.cmd_uAB[0] = MT2A(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
+                                       CTRL_states.cosT, CTRL_states.sinT);
+        CTRL_outputs.cmd_uAB[1] = MT2B(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
+                                       CTRL_states.cosT, CTRL_states.sinT);
         break;
     case MODE_SELECT_FOC:
         /* FOC current loop only */

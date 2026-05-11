@@ -5,6 +5,7 @@
 #include "ACMSim.h"
 #include "main_switch.h"
 #include "pi_math.h"
+#include "super_config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -15,15 +16,10 @@
 //============================================================================
 
 /* Simulation parameters */
-#define MACHINE_TS (CL_TS / 1.0)
-#define NUMBER_OF_STEPS 100000    /* 10秒仿真 */
 #define MACHINE_SIM_PER_CONTROL 1
 
 /* Data file path */
 #define DATA_FILE_NAME "../dat/test_motor_velocity.dat"
-
-/* Test conditions */
-#define CMD_SPEED 100.0    /* Speed command [rad/s] */
 
 
 //============================================================================
@@ -57,21 +53,18 @@ struct MachineSimulated ACM;
  * Motor Initialization
  */
 void init_Machine(void) {
-    /* Name plate data */
-    ACM.npp = TEST_MOTOR_NPP;
+    ACM.npp = d_sim.motor.npp;
     ACM.npp_inv = 1.0 / ACM.npp;
-    ACM.IN = TEST_MOTOR_IN;
+    ACM.IN = d_sim.motor.IN;
 
-    /* Electrical parameters */
-    ACM.R = TEST_MOTOR_R;
-    ACM.Ld = TEST_MOTOR_LD;
-    ACM.Lq = TEST_MOTOR_LQ;
-    ACM.KE = TEST_MOTOR_KE;
+    ACM.R = d_sim.motor.R;
+    ACM.Ld = d_sim.motor.Ld;
+    ACM.Lq = d_sim.motor.Lq;
+    ACM.KE = d_sim.motor.KE;
     ACM.KA = ACM.KE;
     ACM.Rreq = TEST_MOTOR_RREQ;
 
-    /* Mechanical parameters */
-    ACM.Js = TEST_MOTOR_JS;
+    ACM.Js = d_sim.motor.Js;
     ACM.Js_inv = 1.0 / ACM.Js;
 
     /* States initialization */
@@ -121,8 +114,8 @@ void init_Machine(void) {
     ACM.powerfactor = 0.0;
 
     /* Simulation settings */
-    ACM.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD = MACHINE_SIM_PER_CONTROL;
-    ACM.Ts = MACHINE_TS;
+    ACM.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD = d_sim.simulation.machine_sim_per_control;
+    ACM.Ts = d_sim.simulation.cl_ts;
     ACM.current_theta = 0.0;
     ACM.voltage_theta = 0.0;
 
@@ -251,9 +244,13 @@ int machine_simulation(void) {
 void measurement(void) {}
 
 int main(void) {
-    printf("=== Electric Machinery Simulation - Velocity Loop Test ===\n");
-    printf("Testing velocity control:\n");
-    printf("  cmd_speed = %.1f rad/s\n", CMD_SPEED);
+    init_d_sim();
+
+    printf("=== Electric Machinery Simulation ===\n");
+    printf("Mode: %ld\n", d_sim.simulation.mode_select);
+    printf("  cmd_speed = %.1f rad/s\n", d_sim.test.cmd_speed);
+    printf("  cmd_uD = %.1f V, cmd_uQ = %.1f V\n", d_sim.test.cmd_ud, d_sim.test.cmd_uq);
+    printf("  TLoad = %.4f Nm\n", d_sim.test.tload);
     printf("\n");
 
     init_Machine();
@@ -265,7 +262,7 @@ int main(void) {
     printf("\nPI parameters:\n");
     printf("  Current: Kp = %.2f, Ki = %.4f\n", PID_iQ.Kp, PID_iQ.Ki);
     printf("  Speed:   Kp = %.4f, Ki = %.6f\n", PID_Speed.Kp, PID_Speed.Ki);
-    printf("\nSimulation duration: %.1f s\n\n", NUMBER_OF_STEPS * CL_TS);
+    printf("\nSimulation duration: %.1f s\n\n", d_sim.simulation.number_of_steps * d_sim.simulation.cl_ts);
 
     /* Open data file */
     FILE *fw = fopen(DATA_FILE_NAME, "w");
@@ -284,20 +281,23 @@ int main(void) {
     
     int step;
 
-    for (step = 0; step < NUMBER_OF_STEPS; step++) {
-        ACM.timebase = step * CL_TS;
+    for (step = 0; step < d_sim.simulation.number_of_steps; step++) {
+        ACM.timebase = step * d_sim.simulation.cl_ts;
 
-        CTRL_inputs.cmd_varOmega = CMD_SPEED;
+        CTRL_inputs.cmd_varOmega = d_sim.test.cmd_speed;
 
         CTRL_inputs.theta_d_elec = ACM.theta_d;
         CTRL_inputs.varOmega = ACM.varOmega;
         CTRL_inputs.iAB[0] = ACM.iAB[0];
         CTRL_inputs.iAB[1] = ACM.iAB[1];
+        CTRL_inputs.cmd_uDQ[0] = d_sim.test.cmd_ud;
+        CTRL_inputs.cmd_uDQ[1] = d_sim.test.cmd_uq;
 
-        main_switch(MODE_SELECT_VELOCITY_LOOP);
+        main_switch(d_sim.simulation.mode_select);
 
         ACM.uAB[0] = CTRL_outputs.cmd_uAB[0];
         ACM.uAB[1] = CTRL_outputs.cmd_uAB[1];
+        ACM.TLoad = d_sim.test.tload;
 
         if (machine_simulation()) {
             printf("Simulation stopped at step %d\n", step);
@@ -318,13 +318,13 @@ int main(void) {
             CTRL_inputs.cmd_iDQ[1],
             ACM.Tem,
             ACM.theta_d / M_PI * 180,
-            CMD_SPEED
+            d_sim.test.cmd_speed
         );
 
         /* Progress indicator */
         if (step % 2000 == 0) {
             printf("Step %d (%.1f%%): omega=%.2f rad/s, iq=%.3f A, Tem=%.4f Nm\n",
-                   step, 100.0 * step / NUMBER_OF_STEPS,
+                   step, 100.0 * step / d_sim.simulation.number_of_steps,
                    ACM.varOmega, ACM.iDQ[1], ACM.Tem);
         }
     }
@@ -335,13 +335,15 @@ int main(void) {
     /* Final results */
     printf("\n=== Simulation Complete ===\n");
     printf("Final state at t=%.3f s:\n", ACM.timebase);
-    printf("  omega = %.2f rad/s (cmd = %.1f rad/s)\n", ACM.varOmega, CMD_SPEED);
+    printf("  omega = %.2f rad/s (cmd = %.1f rad/s)\n", ACM.varOmega, d_sim.test.cmd_speed);
     printf("  iQ = %.4f A\n", ACM.iDQ[1]);
     printf("  Tem = %.4f Nm\n", ACM.Tem);
 
     /* Calculate speed error */
-    REAL speed_error = fabs(ACM.varOmega - CMD_SPEED) / CMD_SPEED * 100;
-    printf("  Speed error = %.2f%%\n", speed_error);
+    if (fabs(d_sim.test.cmd_speed) > 1e-6) {
+        REAL speed_error = fabs(ACM.varOmega - d_sim.test.cmd_speed) / d_sim.test.cmd_speed * 100;
+        printf("  Speed error = %.2f%%\n", speed_error);
+    }
 
     printf("\nSimulation time: %.3f seconds\n", (REAL)(end - begin) / CLOCKS_PER_SEC);
     printf("Data saved to: %s\n", DATA_FILE_NAME);

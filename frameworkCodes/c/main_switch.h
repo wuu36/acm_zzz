@@ -43,6 +43,7 @@ typedef struct {
     REAL iDQ[2];        /* DQ frame currents (after Park transform) */
     REAL cmd_varOmega;  /* speed command */
     REAL cmd_iDQ[2];    /* current command in DQ frame */
+    REAL cmd_uDQ[2];    /* voltage command in DQ frame (for open-loop VVVF) */
 } st_controller_inputs;
 
 typedef struct {

@@ -13,6 +13,7 @@ SRC = main.c utility.c
 # Common source
 UTIL_SRC = utility.c
 CTRL_SRC = main_switch.c
+CONFIG_SRC = super_config.c
 
 # Compiler settings
 CC = gcc
@@ -29,20 +30,20 @@ TARGET_VELOCITY = velocity_test.exe
 all: $(TARGET)
 	
 # Build rule
-$(TARGET): $(SRC)
-	$(CC) $(CFLAGS) -o $@ $(SRC) -lm
+$(TARGET): $(SRC) $(CONFIG_SRC)
+	$(CC) $(CFLAGS) -o $@ $(SRC) $(CONFIG_SRC) -lm
 
 # FOC test simulation
-$(TARGET_FOC): main_foc_test.c $(UTIL_SRC) $(CTRL_SRC)
-	$(CC) $(CFLAGS) -o $@ main_foc_test.c $(UTIL_SRC) $(CTRL_SRC) -lm
-	
+$(TARGET_FOC): main_foc_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
+	$(CC) $(CFLAGS) -o $@ main_foc_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC) -lm
+
 # FOC with load test simulation
-$(TARGET_FOC_LOAD): main_foc_load_test.c $(UTIL_SRC) $(CTRL_SRC)
-	$(CC) $(CFLAGS) -o $@ main_foc_load_test.c $(UTIL_SRC) $(CTRL_SRC) -lm
+$(TARGET_FOC_LOAD): main_foc_load_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
+	$(CC) $(CFLAGS) -o $@ main_foc_load_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC) -lm
 
 # Velocity test simulation
-$(TARGET_VELOCITY): main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC)
-	$(CC) $(CFLAGS) -o $@ main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC) -lm
+$(TARGET_VELOCITY): main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
+	$(CC) $(CFLAGS) -o $@ main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC) -lm
 
 # Run simulation
 run: $(TARGET)
