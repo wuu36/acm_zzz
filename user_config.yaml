@@ -7,8 +7,8 @@
 # ============================================
 simulation:
   # 时间步长与仿真时长
-  sim.CL_TS: 1.0e-4
-  sim.NUMBER_OF_STEPS: 100000
+  sim.CL_TS: 5.0e-5
+  sim.NUMBER_OF_STEPS: 4000
   sim.MACHINE_SIM_PER_CONTROL: 1
 
   # 测试模式选择

@@ -44,7 +44,7 @@ typedef struct {
     REAL cmd_speed;
     REAL cmd_id;
     REAL cmd_iq;
-    REAL cmd_ud;
+    long cmd_ud;
     REAL cmd_uq;
     REAL tload;
     REAL tload_time;

@@ -249,7 +249,7 @@ int main(void) {
     printf("=== Electric Machinery Simulation ===\n");
     printf("Mode: %ld\n", d_sim.simulation.mode_select);
     printf("  cmd_speed = %.1f rad/s\n", d_sim.test.cmd_speed);
-    printf("  cmd_uD = %.1f V, cmd_uQ = %.1f V\n", d_sim.test.cmd_ud, d_sim.test.cmd_uq);
+    printf("  cmd_uD = %ld V, cmd_uQ = %.1f V\n", (long)d_sim.test.cmd_ud, d_sim.test.cmd_uq);
     printf("  TLoad = %.4f Nm\n", d_sim.test.tload);
     printf("\n");
 

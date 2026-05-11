@@ -43,15 +43,16 @@ def main():
         # 时间步长
         cl_ts = st.number_input(
             "控制周期 [s]",
-            value=1e-4,
-            format="%.4f",
+            value=5e-5,
+            format="%.5f",
+            step=1e-5,
             key="cl_ts"
         )
         # 仿真步数
         num_steps = st.number_input(
             "仿真步数",
-            value=100000,
-            step=10000,
+            value=4000,
+            step=1000,
             key="num_steps"
         )
 
