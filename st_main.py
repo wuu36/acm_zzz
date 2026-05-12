@@ -159,8 +159,8 @@ def main():
             config.user_config['test']['test.cmd_speed'] = cmd_speed
             config.user_config['test']['test.cmd_iQ'] = cmd_iq
             config.user_config['test']['test.TLoad'] = tload
-            config.user_config['test']['test.cmd_uD'] = cmd_uD
-            config.user_config['test']['test.cmd_uQ'] = cmd_uQ
+            config.user_config["test"]["test.cmd_uD"] = cmd_uD
+            config.user_config["test"]["test.cmd_uQ"] = cmd_uQ
 
             # 模式映射
             mode_map = {"开环VVVF": 11, "FOC电流": 3, "速度控制": 4}

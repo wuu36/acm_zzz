@@ -149,7 +149,7 @@ void main_switch(long mode_select) {
         break;
     case MODE_SELECT_FOC:
         /* FOC current loop only */
-        _onlyFOC(CTRL_inputs.theta_d_elec, CTRL_inputs.iAB);
+        FOC_with_current_control(CTRL_inputs.theta_d_elec, CTRL_inputs.iAB);
         break;
     case MODE_SELECT_VELOCITY_LOOP:
         /* velocity loop + FOC */
@@ -183,7 +183,7 @@ void _onlyFOC(REAL theta_d_elec, REAL iAB[2]) {
     PID_iQ.Fbk = CTRL_inputs.iDQ[1];
     PI_MACRO(PID_iQ);
 
-    /* step 3: Output voltage (no decoupling for simplicity) */
+    /* step 3: Output voltage */
     CTRL_outputs.cmd_uDQ[0] = PID_iD.Out;
     CTRL_outputs.cmd_uDQ[1] = PID_iQ.Out;
 
@@ -196,13 +196,20 @@ void _onlyFOC(REAL theta_d_elec, REAL iAB[2]) {
 
 void FOC_with_velocity_control(REAL theta_d_elec, REAL varOmega,
                                 REAL cmd_varOmega, REAL iAB[2]) {
-    /* step1: velocity controller generates iq command */
+    /* step1: velocity controller */
     CTRL_inputs.cmd_iDQ[1] = _velocityController(cmd_varOmega, varOmega);
 
-    /* step2: id command (default: 0 for surface PMSM) */
+    /* step2: id command */
     CTRL_inputs.cmd_iDQ[0] = 0.0;
 
     /* step 3: FOC current loop */
+    _onlyFOC(theta_d_elec, iAB);
+}
+
+void FOC_with_current_control(REAL theta_d_elec, REAL iAB[2]) {
+    CTRL_inputs.cmd_iDQ[0] = CTRL_inputs.cmd_iDQ[0];
+    CTRL_inputs.cmd_iDQ[1] = CTRL_inputs.cmd_iDQ[1];
+
     _onlyFOC(theta_d_elec, iAB);
 }
 

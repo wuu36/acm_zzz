@@ -102,6 +102,9 @@ int main(void) {
         CTRL_inputs.cmd_iDQ[0] = d_sim.test.cmd_id;
         CTRL_inputs.cmd_iDQ[1] = d_sim.test.cmd_iq;
 
+        /* apply load torque */
+        ACM.TLoad = d_sim.test.tload;
+
         /* update controller inputs from motor */
         CTRL_inputs.theta_d_elec = ACM.theta_d;
         CTRL_inputs.varOmega = ACM.varOmega;
@@ -197,7 +200,7 @@ void init_Machine(void) {
     ACM.uAB[1] = 0.0;
     ACM.uDQ[0] = TEST_VOLTAGE_UD;
     ACM.uDQ[1] = TEST_VOLTAGE_UQ;
-    ACM.TLoad = 0.0;
+    ACM.TLoad = d_sim.test.tload;
 
     /* Outputs initialization */
     ACM.varTheta = 0.0;

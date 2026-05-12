@@ -286,14 +286,23 @@ int main(void) {
 
         CTRL_inputs.cmd_varOmega = d_sim.test.cmd_speed;
 
+        /* Set command inputs based on mode */
+        long mode = d_sim.simulation.mode_select;
+        if (mode == MODE_SELECT_FOC) {
+            CTRL_inputs.cmd_iDQ[0] = d_sim.test.cmd_id;
+            CTRL_inputs.cmd_iDQ[1] = d_sim.test.cmd_iq;
+        } else {
+            /* VVVF uses voltage command; velocity uses cmd_varOmega */
+            CTRL_inputs.cmd_uDQ[0] = d_sim.test.cmd_ud;
+            CTRL_inputs.cmd_uDQ[1] = d_sim.test.cmd_uq;
+        }
+
         CTRL_inputs.theta_d_elec = ACM.theta_d;
         CTRL_inputs.varOmega = ACM.varOmega;
         CTRL_inputs.iAB[0] = ACM.iAB[0];
         CTRL_inputs.iAB[1] = ACM.iAB[1];
-        CTRL_inputs.cmd_uDQ[0] = d_sim.test.cmd_ud;
-        CTRL_inputs.cmd_uDQ[1] = d_sim.test.cmd_uq;
 
-        main_switch(d_sim.simulation.mode_select);
+        main_switch(mode);
 
         ACM.uAB[0] = CTRL_outputs.cmd_uAB[0];
         ACM.uAB[1] = CTRL_outputs.cmd_uAB[1];
