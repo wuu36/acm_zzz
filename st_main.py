@@ -9,8 +9,8 @@ import st_interact
 
 
 MODE_CONF = {
-    "open_loop_vvvf": {"label": "Open-Loop VVVF", "mode_select": 11, "target": "velocity_test",
-                       "data_file": "test_motor_velocity.dat"},
+    "open_loop_vvvf": {"label": "Open-Loop VVVF", "mode_select": 11, "target": "vvvf_test",
+                       "data_file": "test_motor_vvvf.dat"},
     "foc_current":    {"label": "FOC Current",    "mode_select": 3,  "target": "foc_test",
                        "data_file": "test_motor_foc.dat"},
     "foc_current_load": {"label": "FOC Load",     "mode_select": 3,  "target": "foc_load_test",

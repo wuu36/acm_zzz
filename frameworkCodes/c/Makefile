@@ -25,6 +25,7 @@ TARGET = main.exe
 TARGET_FOC = foc_test.exe
 TARGET_FOC_LOAD = foc_load_test.exe
 TARGET_VELOCITY = velocity_test.exe
+TARGET_VVVF = vvvf_test.exe
 
 # Default target
 all: $(TARGET)
@@ -45,6 +46,10 @@ $(TARGET_FOC_LOAD): main_foc_load_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
 $(TARGET_VELOCITY): main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
 	$(CC) $(CFLAGS) -o $@ main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC) -lm
 
+# VVVF test simulation
+$(TARGET_VVVF): main_vvvf_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
+	$(CC) $(CFLAGS) -o $@ main_vvvf_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC) -lm
+
 # Run simulation
 run: $(TARGET)
 	./$(TARGET)
@@ -60,6 +65,10 @@ foc_load_test: $(TARGET_FOC_LOAD)
 # Build and run velocity test
 velocity_test: $(TARGET_VELOCITY)
 	./$(TARGET_VELOCITY)
+
+# Build and run VVVF test
+vvvf_test: $(TARGET_VVVF)
+	./$(TARGET_VVVF)
 
 
 # Test

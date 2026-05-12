@@ -1,0 +1,314 @@
+//============================================================================
+//  Includes
+//============================================================================
+
+#include "ACMSim.h"
+#include "main_switch.h"
+#include "pi_math.h"
+#include "super_config.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+
+//============================================================================
+// Local Macros
+//============================================================================
+
+/* Data file path */
+#define DATA_FILE_NAME "../dat/test_motor_vvvf.dat"
+
+//============================================================================
+// Public Variables
+//============================================================================
+
+struct MachineSimulated ACM;
+
+//============================================================================
+// Function declarations.
+//============================================================================
+
+void init_Machine(void);
+int machine_simulation(void);
+void inverter_model(void);
+void RK4(REAL t, REAL *x, REAL hs);
+void DYNAMICS_MACHINE(REAL t, REAL x[], REAL fx[]);
+
+//============================================================================
+// Motor Initialization
+//============================================================================
+
+void init_Machine(void) {
+    ACM.npp = d_sim.motor.npp;
+    ACM.npp_inv = 1.0 / ACM.npp;
+    ACM.IN = d_sim.motor.IN;
+
+    ACM.R = d_sim.motor.R;
+    ACM.Ld = d_sim.motor.Ld;
+    ACM.Lq = d_sim.motor.Lq;
+    ACM.KE = d_sim.motor.KE;
+    ACM.KA = ACM.KE;
+    ACM.Rreq = TEST_MOTOR_RREQ;
+
+    ACM.Js = d_sim.motor.Js;
+    ACM.Js_inv = 1.0 / ACM.Js;
+
+    ACM.NS = MACHINE_NUMBER_OF_STATES;
+    for (int i = 0; i < ACM.NS; i++) {
+        ACM.x[i] = 0.0;
+        ACM.x_dot[i] = 0.0;
+    }
+
+    if (ACM.Rreq <= 0) {
+        ACM.x[2] = ACM.KE;
+    }
+
+    /* Inputs initialization */
+    ACM.uAB_dist[0] = 0.0;
+    ACM.uAB_dist[1] = 0.0;
+    ACM.uAB_inverter[0] = 0.0;
+    ACM.uAB_inverter[1] = 0.0;
+    ACM.uAB[0] = 0.0;
+    ACM.uAB[1] = 0.0;
+    ACM.uDQ[0] = 0.0;
+    ACM.uDQ[1] = 0.0;
+    ACM.TLoad = 0.0;
+
+    /* Outputs initialization */
+    ACM.varTheta = 0.0;
+    ACM.varOmega = 0.0;
+    ACM.omega_syn = 0.0;
+    ACM.omega_slip = 0.0;
+    ACM.theta_d = 0.0;
+    ACM.iDQ[0] = 0.0;
+    ACM.iDQ[1] = 0.0;
+    ACM.iAB[0] = 0.0;
+    ACM.iAB[1] = 0.0;
+    ACM.psi_AB[0] = 0.0;
+    ACM.psi_AB[1] = 0.0;
+    ACM.emf_AB[0] = 0.0;
+    ACM.emf_AB[1] = 0.0;
+    ACM.iuvw[0] = 0.0;
+    ACM.iuvw[1] = 0.0;
+    ACM.iuvw[2] = 0.0;
+    ACM.Tem = 0.0;
+    ACM.cosT = cos(ACM.theta_d);
+    ACM.sinT = sin(ACM.theta_d);
+    ACM.cosT_delay_1p5omegaTs = ACM.cosT;
+    ACM.sinT_delay_1p5omegaTs = ACM.sinT;
+    ACM.powerfactor = 0.0;
+
+    /* Simulation settings */
+    ACM.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD = d_sim.simulation.machine_sim_per_control;
+    ACM.Ts = d_sim.simulation.cl_ts;
+    ACM.current_theta = 0.0;
+    ACM.voltage_theta = 0.0;
+    ACM.timebase = 0.0;
+}
+
+//============================================================================
+// Motor Dynamics
+//============================================================================
+
+void DYNAMICS_MACHINE(REAL t, REAL x[], REAL fx[]) {
+    REAL KA = x[2];
+    REAL iD = x[3];
+    REAL iQ = x[4];
+
+    if (KA == 0.0) {
+        ACM.omega_slip = 0.0;
+    } else {
+        ACM.omega_slip = ACM.Rreq * iQ / KA;
+    }
+
+    ACM.omega_syn = x[1] * ACM.npp + ACM.omega_slip;
+
+    if (ACM.Rreq > 0) {
+        fx[2] = ACM.Rreq * iD - ACM.Rreq / (ACM.Ld - ACM.Lq) * KA;
+        fx[3] = (ACM.uDQ[0] - ACM.R * iD + ACM.omega_syn * ACM.Lq * iQ - fx[2]) / ACM.Lq;
+    } else if (ACM.Rreq < 0) {
+        fx[2] = 0;
+        fx[3] = 0;
+    } else {
+        fx[2] = 0;
+        fx[3] = (ACM.uDQ[0] - ACM.R * iD + ACM.omega_syn * ACM.Lq * iQ) / ACM.Ld;
+    }
+
+    fx[4] = (ACM.uDQ[1] - ACM.R * iQ - ACM.omega_syn * ACM.Ld * iD - ACM.omega_syn * KA) / ACM.Lq;
+
+    ACM.Tem = CLARKE_TRANS_TORQUE_GAIN * ACM.npp * KA * iQ;
+
+    fx[0] = x[1] + ACM.omega_slip / ACM.npp;
+    fx[1] = (ACM.Tem - ACM.TLoad) / ACM.Js;
+}
+
+//============================================================================
+// RK4 Integration
+//============================================================================
+
+void RK4(REAL t, REAL *x, REAL hs) {
+    #define NS MACHINE_NUMBER_OF_STATES
+
+    REAL k1[NS], k2[NS], k3[NS], k4[NS], xk[NS];
+    REAL fx[NS];
+
+    DYNAMICS_MACHINE(t, x, fx);
+    for (int i = 0; i < NS; i++) { k1[i] = fx[i] * hs; xk[i] = x[i] + k1[i] * 0.5; }
+    DYNAMICS_MACHINE(t, xk, fx);
+    for (int i = 0; i < NS; i++) { k2[i] = fx[i] * hs; xk[i] = x[i] + k2[i] * 0.5; }
+    DYNAMICS_MACHINE(t, xk, fx);
+    for (int i = 0; i < NS; i++) { k3[i] = fx[i] * hs; xk[i] = x[i] + k3[i]; }
+    DYNAMICS_MACHINE(t, xk, fx);
+    for (int i = 0; i < NS; i++) {
+        k4[i] = fx[i] * hs;
+        x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i]) * one_over_six;
+        ACM.x_dot[i] = (k1[i] + 2*(k2[i] + k3[i]) + k4[i]) * one_over_six / hs;
+    }
+
+    #undef NS
+}
+
+//============================================================================
+// Inverter Model
+//============================================================================
+
+void inverter_model(void) {
+    ACM.uAB_inverter[0] = ACM.uAB[0];
+    ACM.uAB_inverter[1] = ACM.uAB[1];
+}
+
+//============================================================================
+// Machine Simulation Step
+//============================================================================
+
+int machine_simulation(void) {
+    inverter_model();
+
+    ACM.uDQ[0] = AB2M(ACM.uAB_inverter[0], ACM.uAB_inverter[1], ACM.cosT, ACM.sinT);
+    ACM.uDQ[1] = AB2T(ACM.uAB_inverter[0], ACM.uAB_inverter[1], ACM.cosT, ACM.sinT);
+
+    RK4(ACM.timebase, ACM.x, ACM.Ts);
+
+    ACM.varOmega = ACM.x[1];
+    ACM.varTheta = ACM.x[0];
+    ACM.theta_d = ACM.varTheta * ACM.npp;
+    ACM.cosT = cos(ACM.theta_d);
+    ACM.sinT = sin(ACM.theta_d);
+
+    ACM.iDQ[0] = ACM.x[3];
+    ACM.iDQ[1] = ACM.x[4];
+
+    ACM.iAB[0] = MT2A(ACM.iDQ[0], ACM.iDQ[1], ACM.cosT, ACM.sinT);
+    ACM.iAB[1] = MT2B(ACM.iDQ[0], ACM.iDQ[1], ACM.cosT, ACM.sinT);
+
+    ACM.KA = ACM.x[2];
+    ACM.psi_AB[0] = ACM.KA * ACM.cosT;
+    ACM.psi_AB[1] = ACM.KA * ACM.sinT;
+
+    while (ACM.theta_d > M_PI)  ACM.theta_d -= 2 * M_PI;
+    while (ACM.theta_d < -M_PI) ACM.theta_d += 2 * M_PI;
+
+    if (!isNumber(ACM.varOmega)) {
+        printf("Warning: varOmega is NaN or Inf, stopping simulation\n");
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+//============================================================================
+// Main Entry
+//============================================================================
+
+void measurement(void) {}
+
+int main(void) {
+    init_d_sim();
+
+    printf("=== Electric Machinery Simulation - VVVF Test ===\n");
+    printf("  cmd_uD = %ld V, cmd_uQ = %.1f V\n", (long)d_sim.test.cmd_ud, d_sim.test.cmd_uq);
+    printf("  TLoad = %.4f Nm\n", d_sim.test.tload);
+    printf("\n");
+
+    init_Machine();
+    init_CTRL();
+
+    printf("Motor parameters:\n");
+    printf("  npp = %d, R = %.3f Ohm, L = %.2f mH\n", ACM.npp, ACM.R, ACM.Lq*1000);
+    printf("  KE = %.4f Wb, Js = %.2e kg.m^2\n", ACM.KE, ACM.Js);
+    printf("  Vdc = %ld V, IN = %.1f A\n", (long)d_sim.motor.Vdc, d_sim.motor.IN);
+    printf("\nSimulation duration: %.1f s\n\n", d_sim.simulation.number_of_steps * d_sim.simulation.cl_ts);
+
+    FILE *fw = fopen(DATA_FILE_NAME, "w");
+    if (fw == NULL) {
+        printf("Error: Cannot open data file %s\n", DATA_FILE_NAME);
+        return 1;
+    }
+
+    fprintf(fw, "time,varTheta,varOmega,iD,iQ,uD,uQ,Tem,theta_d\n");
+
+    clock_t begin = clock();
+
+    ACM.uAB[0] = 0.0;
+    ACM.uAB[1] = 0.0;
+
+    /* Set VVVF voltage commands */
+    CTRL_inputs.cmd_uDQ[0] = d_sim.test.cmd_ud;
+    CTRL_inputs.cmd_uDQ[1] = d_sim.test.cmd_uq;
+
+    int step;
+    for (step = 0; step < d_sim.simulation.number_of_steps; step++) {
+        ACM.timebase = step * d_sim.simulation.cl_ts;
+
+        CTRL_inputs.theta_d_elec = ACM.theta_d;
+        CTRL_inputs.varOmega = ACM.varOmega;
+        CTRL_inputs.iAB[0] = ACM.iAB[0];
+        CTRL_inputs.iAB[1] = ACM.iAB[1];
+
+        main_switch(MODE_SELECT_VOLTAGE_OPEN_LOOP);
+
+        ACM.uAB[0] = CTRL_outputs.cmd_uAB[0];
+        ACM.uAB[1] = CTRL_outputs.cmd_uAB[1];
+        ACM.TLoad = d_sim.test.tload;
+
+        if (machine_simulation()) {
+            printf("Simulation stopped at step %d\n", step);
+            break;
+        }
+
+        measurement();
+
+        fprintf(fw, "%g,%g,%g,%g,%g,%g,%g,%g,%g\n",
+            ACM.timebase,
+            ACM.varTheta,
+            ACM.varOmega,
+            ACM.iDQ[0],
+            ACM.iDQ[1],
+            CTRL_outputs.cmd_uDQ[0],
+            CTRL_outputs.cmd_uDQ[1],
+            ACM.Tem,
+            ACM.theta_d / M_PI * 180
+        );
+
+        if (step % 2000 == 0) {
+            printf("Step %d (%.1f%%): omega=%.2f rad/s, iq=%.3f A, Tem=%.4f Nm\n",
+                   step, 100.0 * step / d_sim.simulation.number_of_steps,
+                   ACM.varOmega, ACM.iDQ[1], ACM.Tem);
+        }
+    }
+
+    clock_t end = clock();
+    fclose(fw);
+
+    printf("\n=== Simulation Complete ===\n");
+    printf("Final state at t=%.3f s:\n", ACM.timebase);
+    printf("  omega = %.2f rad/s\n", ACM.varOmega);
+    printf("  iQ = %.4f A\n", ACM.iDQ[1]);
+    printf("  Tem = %.4f Nm\n", ACM.Tem);
+    printf("\nSimulation time: %.3f seconds\n", (REAL)(end - begin) / CLOCKS_PER_SEC);
+    printf("Data saved to: %s\n", DATA_FILE_NAME);
+
+    return 0;
+}
+
+//-------------------- End of File -------------------------------------------
