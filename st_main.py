@@ -1,6 +1,5 @@
 
 import os
-import time as python_time
 
 import streamlit as st
 from super_config import SuperConfig
@@ -11,11 +10,13 @@ import st_interact
 
 MODE_CONF = {
     "open_loop_vvvf": {"label": "Open-Loop VVVF", "mode_select": 11, "target": "velocity_test",
-                       "data_file": "test_vvvf.dat", "src_file": "test_motor_velocity.dat"},
+                       "data_file": "test_motor_velocity.dat"},
     "foc_current":    {"label": "FOC Current",    "mode_select": 3,  "target": "foc_test",
-                       "data_file": "test_foc.dat", "src_file": "test_motor_foc.dat"},
+                       "data_file": "test_motor_foc.dat"},
+    "foc_current_load": {"label": "FOC Load",     "mode_select": 3,  "target": "foc_load_test",
+                         "data_file": "test_motor_foc_load.dat"},
     "speed_control":  {"label": "Speed Control",  "mode_select": 4,  "target": "velocity_test",
-                       "data_file": "test_velocity.dat", "src_file": "test_motor_velocity.dat"},
+                       "data_file": "test_motor_velocity.dat"},
 }
 
 
@@ -32,38 +33,21 @@ def main():
     """streamlit主函数"""
     streamlit_config()
 
-    # 标题
     st.title("⚡ Electric Machinery Simulation")
     st.markdown("---")
     
-    # 初始化配置
     config = SuperConfig()
     config.load_motor_library()
     config.load_user_config()
 
-    # 侧边栏
     with st.sidebar:
         st.header("🔌 电机选择")
         motor_list = list(config.motor_library.keys())
-        selected_motor = st.selectbox(
-            "选择电机",
-            motor_list,
-            key="motor_select"
-        )
+        selected_motor = st.selectbox("选择电机", motor_list, key="motor_select")
+
         st.header("⚙️ 仿真参数")
-        cl_ts = st.number_input(
-            "控制周期 [s]",
-            value=5e-5,
-            format="%.5f",
-            step=1e-5,
-            key="cl_ts"
-        )
-        num_steps = st.number_input(
-            "仿真步数",
-            value=4000,
-            step=1000,
-            key="num_steps"
-        )
+        cl_ts = st.number_input("控制周期 [s]", value=5e-5, format="%.5f", step=1e-5, key="cl_ts")
+        num_steps = st.number_input("仿真步数", value=4000, step=1000, key="num_steps")
 
         st.header("🎯 测试指令")
         mode_key = st.radio(
@@ -73,52 +57,27 @@ def main():
             key="mode_select"
         )
 
-        # 根据模式显示不同参数
         if mode_key == "speed_control":
-            cmd_speed = st.number_input(
-                "速度指令 [rad/s]",
-                value=100.0,
-                key="cmd_speed"
-            )
+            cmd_speed = st.number_input("速度指令 [rad/s]", value=100.0, key="cmd_speed")
             cmd_iq = 0.0
             cmd_uD = 0.0
             cmd_uQ = 0.0
-        elif mode_key == "foc_current":
-            cmd_iq = st.number_input(
-                "Q轴电流指令 [A]",
-                value=1.0,
-                key="cmd_iq"
-            )
+        elif "foc" in mode_key:
+            cmd_iq = st.number_input("Q轴电流指令 [A]", value=1.0, key="cmd_iq")
             cmd_speed = 0.0
             cmd_uD = 0.0
             cmd_uQ = 0.0
         else:
-            cmd_uD = st.number_input(
-                "D轴电压指令 [V]",
-                value=0.0,
-                key="cmd_uD"
-            )
-            cmd_uQ = st.number_input(
-                "Q轴电压指令 [V]",
-                value=5.0,
-                key="cmd_uQ"
-            )
+            cmd_uD = st.number_input("D轴电压指令 [V]", value=0.0, key="cmd_uD")
+            cmd_uQ = st.number_input("Q轴电压指令 [V]", value=5.0, key="cmd_uQ")
             cmd_speed = 0.0
             cmd_iq = 0.0
 
-        # 负载设置
-        tload = st.number_input(
-            "负载转矩 [Nm]",
-            value=0.0,
-            format="%.4f",
-            key="tload"
-        )
+        tload = st.number_input("负载转矩 [Nm]", value=0.0, format="%.4f", key="tload")
 
-        # 运行按钮
         st.markdown("---")
         run_button = st.button("▶️ 运行仿真", type="primary")
     
-    # 主区域：参数显示
     st.header("📊 电机参数")
     motor_params = config.get_motor_params(selected_motor)
 
@@ -127,7 +86,6 @@ def main():
     if edit_mode and motor_params:
         edited_params = st_interact.motor_parameter_editor(motor_params)
         st.session_state['edited_motor_params'] = edited_params
-
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("极对数", edited_params['npp'])
@@ -138,7 +96,6 @@ def main():
         with col3:
             st.metric("KE", f"{edited_params['KE']} Wb")
             st.metric("惯量", f"{edited_params['Js']*1e6:.2f} μkg·m²")
-
         st.info("参数已编辑, 点击运行仿真将使用修改后的参数")
     elif motor_params:
         col1, col2, col3 = st.columns(3)
@@ -152,11 +109,15 @@ def main():
             st.metric("KE", f"{motor_params['KE']} Wb")
             st.metric("惯量", f"{motor_params['Js']*1e6:.2f} μkg·m²")
 
-    # 点击运行按钮
     cfg = MODE_CONF[mode_key]
 
     if run_button:
         st.header("🔄 运行仿真")
+
+        # Determine target: FOC with load → foc_load_test
+        target = cfg["target"]
+        if mode_key == "foc_current" and tload > 0:
+            target = "foc_load_test"
 
         with st.spinner("生成配置..."):
             config.motor_name = selected_motor
@@ -170,13 +131,6 @@ def main():
             config.user_config['simulation']['sim.MODE_SELECT'] = cfg["mode_select"]
             config.update_super_config()
         
-        # Determine target (FOC with load → foc_load_test)
-        target = cfg["target"]
-        src_file = cfg["src_file"]
-        if mode_key == "foc_current" and tload > 0:
-            target = "foc_load_test"
-            src_file = "test_motor_foc_load.dat"
-        
         with st.spinner("编译仿真..."):
             success = config.compile_simulation(target)
             if success:
@@ -188,12 +142,6 @@ def main():
         with st.spinner("运行仿真..."):
             success = config.run_simulation(target)
             if success:
-                # Copy result to mode-specific filename
-                import shutil as _shutil
-                src_dat = os.path.join(config.c_path, "..", "dat")
-                src_full = os.path.join(src_dat, src_file)
-                if os.path.exists(src_full):
-                    _shutil.copy2(src_full, os.path.join(src_dat, cfg["data_file"]))
                 st.success("仿真完成！")
             else:
                 st.error("仿真失败！")
@@ -211,12 +159,11 @@ def main():
             reverse=True
         )
         
-    # Default select the current mode's data file
-    default_idx = 0
-    if cfg["data_file"] in data_files:
-        default_idx = data_files.index(cfg["data_file"])
-        
     if data_files:
+        default_idx = 0
+        if cfg["data_file"] in data_files:
+            default_idx = data_files.index(cfg["data_file"])
+            
         selected_file = st.selectbox(
             "选择数据文件",
             data_files,
@@ -227,7 +174,6 @@ def main():
         if selected_file:
             try:
                 df = cplot.read_data(os.path.join(data_path, selected_file))
-                
                 if df is not None and len(df) > 0:
                     fig, axes = plt.subplots(3, 1, figsize=(10, 8))
                     
