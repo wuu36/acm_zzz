@@ -1,11 +1,22 @@
 
 import os
+import time as python_time
 
 import streamlit as st
 from super_config import SuperConfig
 import cplot
 import matplotlib.pyplot as plt
 import st_interact
+
+
+MODE_CONF = {
+    "open_loop_vvvf": {"label": "Open-Loop VVVF", "mode_select": 11, "target": "velocity_test",
+                       "data_file": "test_vvvf.dat", "src_file": "test_motor_velocity.dat"},
+    "foc_current":    {"label": "FOC Current",    "mode_select": 3,  "target": "foc_test",
+                       "data_file": "test_foc.dat", "src_file": "test_motor_foc.dat"},
+    "speed_control":  {"label": "Speed Control",  "mode_select": 4,  "target": "velocity_test",
+                       "data_file": "test_velocity.dat", "src_file": "test_motor_velocity.dat"},
+}
 
 
 def streamlit_config():
@@ -30,7 +41,7 @@ def main():
     config.load_motor_library()
     config.load_user_config()
 
-    # 侧边栏： 电机选择
+    # 侧边栏
     with st.sidebar:
         st.header("🔌 电机选择")
         motor_list = list(config.motor_library.keys())
@@ -40,7 +51,6 @@ def main():
             key="motor_select"
         )
         st.header("⚙️ 仿真参数")
-        # 时间步长
         cl_ts = st.number_input(
             "控制周期 [s]",
             value=5e-5,
@@ -48,7 +58,6 @@ def main():
             step=1e-5,
             key="cl_ts"
         )
-        # 仿真步数
         num_steps = st.number_input(
             "仿真步数",
             value=4000,
@@ -57,15 +66,15 @@ def main():
         )
 
         st.header("🎯 测试指令")
-        # 测试模式
-        mode = st.radio(
+        mode_key = st.radio(
             "控制模式",
-            ["开环VVVF", "FOC电流", "速度控制"],
+            list(MODE_CONF.keys()),
+            format_func=lambda k: f"{MODE_CONF[k]['label']}",
             key="mode_select"
         )
 
         # 根据模式显示不同参数
-        if mode == "速度控制":
+        if mode_key == "speed_control":
             cmd_speed = st.number_input(
                 "速度指令 [rad/s]",
                 value=100.0,
@@ -74,7 +83,7 @@ def main():
             cmd_iq = 0.0
             cmd_uD = 0.0
             cmd_uQ = 0.0
-        elif mode == "FOC电流":
+        elif mode_key == "foc_current":
             cmd_iq = st.number_input(
                 "Q轴电流指令 [A]",
                 value=1.0,
@@ -109,16 +118,13 @@ def main():
         st.markdown("---")
         run_button = st.button("▶️ 运行仿真", type="primary")
     
-    # 主区域：参数显示和结果可视化
-    # 显示电机参数
+    # 主区域：参数显示
     st.header("📊 电机参数")
     motor_params = config.get_motor_params(selected_motor)
 
-    # 参数编辑开关
     edit_mode = st.checkbox("启用参数编辑", value=False)
     
     if edit_mode and motor_params:
-        # 使用参数编辑器
         edited_params = st_interact.motor_parameter_editor(motor_params)
         st.session_state['edited_motor_params'] = edited_params
 
@@ -135,7 +141,6 @@ def main():
 
         st.info("参数已编辑, 点击运行仿真将使用修改后的参数")
     elif motor_params:
-        # 显示默认参数
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("极对数", motor_params['npp'])
@@ -148,11 +153,12 @@ def main():
             st.metric("惯量", f"{motor_params['Js']*1e6:.2f} μkg·m²")
 
     # 点击运行按钮
+    cfg = MODE_CONF[mode_key]
+
     if run_button:
         st.header("🔄 运行仿真")
 
         with st.spinner("生成配置..."):
-            # 更新配置
             config.motor_name = selected_motor
             config.user_config['simulation']['sim.CL_TS'] = cl_ts
             config.user_config['simulation']['sim.NUMBER_OF_STEPS'] = num_steps
@@ -161,27 +167,18 @@ def main():
             config.user_config['test']['test.TLoad'] = tload
             config.user_config["test"]["test.cmd_uD"] = cmd_uD
             config.user_config["test"]["test.cmd_uQ"] = cmd_uQ
-
-            # 模式映射
-            mode_map = {"开环VVVF": 11, "FOC电流": 3, "速度控制": 4}
-            config.user_config['simulation']['sim.MODE_SELECT'] = mode_map[mode]
-            
-            # 生成C配置
+            config.user_config['simulation']['sim.MODE_SELECT'] = cfg["mode_select"]
             config.update_super_config()
         
+        # Determine target (FOC with load → foc_load_test)
+        target = cfg["target"]
+        src_file = cfg["src_file"]
+        if mode_key == "foc_current" and tload > 0:
+            target = "foc_load_test"
+            src_file = "test_motor_foc_load.dat"
+        
         with st.spinner("编译仿真..."):
-            # 编译
-            if mode == "速度控制":
-                target = "velocity_test"
-            elif mode == "FOC电流" and tload > 0:
-                target = "foc_load_test"
-            elif mode == "开环VVVF":
-                target = "velocity_test"
-            else:
-                target = "velocity_test"
-            
             success = config.compile_simulation(target)
-
             if success:
                 st.success("编译成功！")
             else:
@@ -189,10 +186,14 @@ def main():
                 st.stop()
         
         with st.spinner("运行仿真..."):
-            # 运行
             success = config.run_simulation(target)
-            
             if success:
+                # Copy result to mode-specific filename
+                import shutil as _shutil
+                src_dat = os.path.join(config.c_path, "..", "dat")
+                src_full = os.path.join(src_dat, src_file)
+                if os.path.exists(src_full):
+                    _shutil.copy2(src_full, os.path.join(src_dat, cfg["data_file"]))
                 st.success("仿真完成！")
             else:
                 st.error("仿真失败！")
@@ -201,17 +202,26 @@ def main():
     # 结果可视化
     st.header("📈 仿真结果")
 
-    # 检查数据文件
     data_path = os.path.join(config.c_path, "..", "dat")
-    data_file = []
+    data_files = []
     if os.path.exists(data_path):
-        data_files = [f for f in os.listdir(data_path) if f.endswith('.dat')]
+        data_files = sorted(
+            [f for f in os.listdir(data_path) if f.endswith('.dat')],
+            key=lambda f: os.path.getmtime(os.path.join(data_path, f)),
+            reverse=True
+        )
+        
+    # Default select the current mode's data file
+    default_idx = 0
+    if cfg["data_file"] in data_files:
+        default_idx = data_files.index(cfg["data_file"])
         
     if data_files:
         selected_file = st.selectbox(
             "选择数据文件",
             data_files,
-            key="data_file"
+            key="data_file",
+            index=default_idx
         )
 
         if selected_file:
@@ -219,23 +229,19 @@ def main():
                 df = cplot.read_data(os.path.join(data_path, selected_file))
                 
                 if df is not None and len(df) > 0:
-                    # 绘图
                     fig, axes = plt.subplots(3, 1, figsize=(10, 8))
                     
-                    # 转速
                     axes[0].plot(df['time'], df.get('varOmega', df.get('omega', [])), 'b-', linewidth=1)
                     axes[0].set_ylabel('speed [rad/s]')
                     axes[0].set_title('motor speed')
                     axes[0].grid(True)
 
-                    # 电流
                     if 'iQ' in df.columns:
                         axes[1].plot(df['time'], df['iQ'], 'r-', linewidth=1)
                         axes[1].set_ylabel('iQ [A]')
                         axes[1].set_title('Q-axis current')
                         axes[1].grid(True)
 
-                    # 转矩
                     if 'Tem' in df.columns:
                         axes[2].plot(df['time'], df['Tem'], 'g-', linewidth=1)
                         axes[2].set_ylabel('torque [Nm]')
@@ -246,17 +252,12 @@ def main():
                     plt.tight_layout()
                     st.pyplot(fig)
 
-                    # 数据统计
                     st.subheader("数据统计")
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write(f"数据点数：{len(df)}")
                         st.write(f"仿真时长：{df['time'].iloc[-1]:.2f} s")
                     with col2:
-                        if 'varOmega' in df.columns or 'omega' in df.columns:
-                            omega_col = df.get('varOmega', df.get('omega'))
-                        if 'Tem' in df.columns:
-                            st.write(f"稳态转矩: {df['Tem'].iloc[-100:].mean():.2f} rad/s")
                         if 'Tem' in df.columns:
                             st.write(f"稳态转矩: {df['Tem'].iloc[-100:].mean():.4f} Nm")
 
