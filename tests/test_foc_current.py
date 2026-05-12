@@ -48,14 +48,17 @@ def run_foc(motor, cmd_iq, tload=0.0, cl_ts=5e-5, steps=200, target="foc_test"):
     return pd.read_csv(os.path.join(SDAT, "test_motor_foc.dat"))
 
 print("="*70)
-print("Test 1: FOC电流跟踪瞬态 (cmd_iQ=1A, 200步=10ms)")
+print("Test 1: FOC电流跟踪瞬态 (cmd_iQ=1A, 50步=2.5ms)")
 print("="*70)
-df1 = run_foc("SEW100W", cmd_iq=1.0, steps=200)
-t90 = df1[df1["iQ"] >= 0.9]["time"].min()
-overshoot = df1["iQ"].max()
-print(f"  90%上升时间: {t90*1000:.3f} ms")
-print(f"  峰值iQ: {overshoot:.4f} A")
-print(f"  稳态iQ (step 200): {df1['iQ'].iloc[-10:].mean():.4f} A")
+df1 = run_foc("SEW100W", cmd_iq=1.0, steps=50, cl_ts=5e-5)
+# t90: first time iQ >= 0.9*1.0 in rising edge
+iQ_90 = df1[df1["iQ"] >= 0.9 * 1.0]
+t90 = df1["time"].iloc[0]
+iQ_max = df1["iQ"].max()
+if not iQ_90.empty:
+    t90 = iQ_90.iloc[0]["time"]
+print(f"  peak iQ: {iQ_max:.4f} A (reached {'no 90%' if iQ_90.empty else f't90={t90*1000:.2f}ms'})")
+print(f"  稳态iQ (step 50): {df1['iQ'].iloc[-10:].mean():.4f} A")
 
 print("\n" + "="*70)
 print("Test 2: FOC无负载 (cmd_iQ=2A, 10000步=500ms)")
