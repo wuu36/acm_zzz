@@ -163,21 +163,18 @@ int main(void) {
 }
 
 void init_Machine(void) {
-    /* Name plate data */
-    ACM.npp = TEST_MOTOR_NPP;
+    ACM.npp = d_sim.motor.npp;
     ACM.npp_inv = 1.0 / ACM.npp;
-    ACM.IN = TEST_MOTOR_IN;
+    ACM.IN = d_sim.motor.IN;
 
-    /* Electrical parameters */
-    ACM.R = TEST_MOTOR_R;
-    ACM.Ld = TEST_MOTOR_LD;
-    ACM.Lq = TEST_MOTOR_LQ;
-    ACM.KE = TEST_MOTOR_KE;
+    ACM.R = d_sim.motor.R;
+    ACM.Ld = d_sim.motor.Ld;
+    ACM.Lq = d_sim.motor.Lq;
+    ACM.KE = d_sim.motor.KE;
     ACM.KA = ACM.KE;
     ACM.Rreq = TEST_MOTOR_RREQ;
 
-    /* Mechanical parameters */
-    ACM.Js = TEST_MOTOR_JS;
+    ACM.Js = d_sim.motor.Js;
     ACM.Js_inv = 1.0 / ACM.Js;
 
     /* States initialization */
