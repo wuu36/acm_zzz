@@ -66,8 +66,10 @@ void init_motor_params(void) {
 }
 
 void init_PI_controllers(void) {
-    REAL BW_current = 100.0;    /* current loop bandwidth Hz (保守设置)*/
-    REAL BW_speed = 10.0;       /* Speed loop bandwidth Hz (保守设置) */
+    REAL BW_current = 100.0;    /* current loop bandwidth Hz */
+    REAL BW_speed = 500.0;      /* Speed loop bandwidth Hz */
+
+    REAL Kt = 1.5 * motor_params.npp * motor_params.KE;  /* torque constant Nm/A */
 
     /* D-axis current PI */
     PID_iD.Kp = motor_params.Ld * BW_current * 2 * M_PI;
@@ -81,8 +83,8 @@ void init_PI_controllers(void) {
     PID_iQ.Umax = d_sim.motor.Vdc / 2.0;
     PID_iQ.Umin = -PID_iQ.Umax;
 
-    /* Speed PI */
-    PID_Speed.Kp = motor_params.Js * BW_speed * 2 * M_PI;
+    /* Speed PI (output is current reference in Amperes) */
+    PID_Speed.Kp = motor_params.Js * BW_speed * 2 * M_PI / Kt;
     PID_Speed.Ki = PID_Speed.Kp * BW_speed * 2 * M_PI * CL_TS;
     PID_Speed.Umax = d_sim.motor.IN;  /* Limit to rated current */
     PID_Speed.Umin = -PID_Speed.Umax;

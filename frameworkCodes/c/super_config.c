@@ -10,16 +10,16 @@ void init_d_sim() {
     d_sim.simulation.cl_ts = 5e-05;
     d_sim.simulation.number_of_steps = 4000;
     d_sim.simulation.machine_sim_per_control = 1;
-    d_sim.simulation.mode_select = 11;
+    d_sim.simulation.mode_select = 4;
 
     strcpy(d_sim.motor.name, "SEW100W");
     d_sim.motor.npp = 4;
     d_sim.motor.in = 3.5;
     d_sim.motor.r = 0.475;
-    d_sim.motor.ld = 0.00205;
-    d_sim.motor.lq = 0.00205;
+    d_sim.motor.ld = 0.0020499999999999997;
+    d_sim.motor.lq = 0.0020499999999999997;
     d_sim.motor.ke = 0.0107;
-    d_sim.motor.js = 3.5e-06;
+    d_sim.motor.js = 3.5e-08;
     d_sim.motor.vdc = 48;
     d_sim.motor.IN = 3.5;
     d_sim.motor.R = 0.475;
@@ -34,9 +34,9 @@ void init_d_sim() {
     d_sim.control.speed_bw = 10.0;
     d_sim.control.vl_exe_per_cl_exe = 10;
 
-    d_sim.test.cmd_speed = 0.0;
+    d_sim.test.cmd_speed = 100.0;
     d_sim.test.cmd_id = 0.0;
-    d_sim.test.cmd_iq = 0.0;
+    d_sim.test.cmd_iq = 1.0;
     d_sim.test.cmd_ud = 0.0;
     d_sim.test.cmd_uq = 5.0;
     d_sim.test.tload = 0.0;
