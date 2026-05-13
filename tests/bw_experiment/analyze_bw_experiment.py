@@ -87,60 +87,62 @@ def calc_metrics(data, case_params):
         'Overshoot%': f'{overshoot:.1f}',
     }
 
-def plot_speed_comparison(cases_to_plot, title, filename):
-    fig, ax = plt.subplots(1, 1, figsize=(12, 6))
+def plot_sub(ax, cases_to_plot, field, ylabel, ref_line=None, title=None):
     for case_name in cases_to_plot:
         data = load_data(case_name)
-        ax.plot(data['time']*1000, data['varOmega'], color=COLORS[case_name],
-                label=CASES[case_name]['label'], linewidth=1.5)
-    ax.axhline(y=CMD_SPEED, color='black', linestyle='--', linewidth=1, label='cmd=100 rad/s')
+        ax.plot(data['time']*1000, data[field], color=COLORS[case_name],
+                label=CASES[case_name]['label'], linewidth=1)
+    if ref_line:
+        for y, color, lbl in ref_line:
+            ax.axhline(y=y, color=color, linestyle='--', linewidth=1, label=lbl)
     ax.axhline(y=0, color='gray', linestyle=':', linewidth=0.5)
-    ax.set_xlabel('Time (ms)')
-    ax.set_ylabel('Speed (rad/s)')
-    ax.set_title(title)
-    ax.legend(loc='best', fontsize=8)
+    ax.set_xlabel('time [ms]')
+    ax.set_ylabel(ylabel)
+    if title:
+        ax.set_title(title, fontsize=10)
+    ax.legend(loc='best', fontsize=6)
     ax.grid(True, alpha=0.3)
-    plt.tight_layout()
-    out_path = os.path.join(RESULT_DIR, filename)
-    plt.savefig(out_path, dpi=150)
-    plt.close()
-    print(f"Saved: {out_path}")
 
-def plot_iq_comparison(cases_to_plot, title, filename):
-    fig, ax = plt.subplots(1, 1, figsize=(12, 6))
-    for case_name in cases_to_plot:
-        data = load_data(case_name)
-        ax.plot(data['time']*1000, data['iQ'], color=COLORS[case_name],
-                label=CASES[case_name]['label'], linewidth=1.5)
-    ax.axhline(y=0.78, color='black', linestyle='--', linewidth=1, label='steady iq=TLoad/Kt=0.78A')
-    ax.set_xlabel('Time (ms)')
-    ax.set_ylabel('iQ (A)')
-    ax.set_title(title)
-    ax.legend(loc='best', fontsize=8)
-    ax.grid(True, alpha=0.3)
+def plot_combined():
+    speed_sweep = ["1a_bw5", "1b_bw10", "1c_bw20", "1d_bw50"]
+    violate = ["2a_bw100", "2b_bw150"]
+    current_sweep = ["3a_curr50", "1c_bw20"]
+    all_cases = list(CASES.keys())
+
+    fig, axes = plt.subplots(3, 3, figsize=(16, 12))
+
+    speed_ref = [(CMD_SPEED, 'k', 'cmd=100 rad/s')]
+    iq_ref = [(0.78, 'k', 'iq=TLoad/Kt=0.78A')]
+
+    plot_sub(axes[0,0], speed_sweep, 'varOmega', 'Speed [rad/s]',
+             ref_line=speed_ref, title='Exp1: BW_speed Sweep - Speed')
+    plot_sub(axes[0,1], speed_sweep, 'iQ', 'iQ [A]',
+             ref_line=iq_ref, title='Exp1: BW_speed Sweep - iQ')
+    plot_sub(axes[0,2], speed_sweep, 'cmd_iQ', 'cmd_iQ [A]',
+             ref_line=iq_ref, title='Exp1: BW_speed Sweep - cmd_iQ')
+
+    plot_sub(axes[1,0], violate, 'varOmega', 'Speed [rad/s]',
+             ref_line=speed_ref, title='Exp2: Cascade Violate - Speed')
+    plot_sub(axes[1,1], violate, 'iQ', 'iQ [A]',
+             ref_line=iq_ref, title='Exp2: Cascade Violate - iQ')
+    plot_sub(axes[1,2], violate, 'cmd_iQ', 'cmd_iQ [A]',
+             title='Exp2: Cascade Violate - cmd_iQ')
+
+    plot_sub(axes[2,0], current_sweep, 'varOmega', 'Speed [rad/s]',
+             ref_line=speed_ref, title='Exp3: BW_current - Speed')
+    plot_sub(axes[2,1], current_sweep, 'iQ', 'iQ [A]',
+             ref_line=iq_ref, title='Exp3: BW_current - iQ')
+    plot_sub(axes[2,2], all_cases, 'varOmega', 'Speed [rad/s]',
+             ref_line=speed_ref, title='All Cases Overview - Speed')
+
     plt.tight_layout()
-    out_path = os.path.join(RESULT_DIR, filename)
+    out_path = os.path.join(RESULT_DIR, "bw_experiment_all.png")
     plt.savefig(out_path, dpi=150)
     plt.close()
     print(f"Saved: {out_path}")
 
 def main():
-    speed_sweep = ["1a_bw5", "1b_bw10", "1c_bw20", "1d_bw50"]
-    violate = ["2a_bw100", "2b_bw150"]
-    current_sweep = ["3a_curr50", "1c_bw20"]
-
-    plot_speed_comparison(speed_sweep, "BW_speed Sweep: Speed Response", "speed_bw_sweep.png")
-    plot_iq_comparison(speed_sweep, "BW_speed Sweep: iQ Response", "iq_bw_sweep.png")
-
-    plot_speed_comparison(violate, "Cascade Violation: Speed Response", "speed_violate.png")
-    plot_iq_comparison(violate, "Cascade Violation: iQ Response", "iq_violate.png")
-
-    plot_speed_comparison(current_sweep, "BW_current Comparison: Speed Response", "speed_current_bw.png")
-    plot_iq_comparison(current_sweep, "BW_current Comparison: iQ Response", "iq_current_bw.png")
-
-    all_cases = list(CASES.keys())
-    plot_speed_comparison(all_cases, "All Cases: Speed Response Overview", "speed_all_cases.png")
-    plot_iq_comparison(all_cases, "All Cases: iQ Response Overview", "iq_all_cases.png")
+    plot_combined()
 
     metrics = []
     for case_name, case_params in CASES.items():
