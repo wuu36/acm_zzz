@@ -66,8 +66,8 @@ void init_motor_params(void) {
 }
 
 void init_PI_controllers(void) {
-    REAL BW_current = 100.0;    /* current loop bandwidth Hz */
-    REAL BW_speed = 500.0;      /* Speed loop bandwidth Hz */
+    REAL BW_current = d_sim.control.current_bw;    /* current loop bandwidth Hz */
+    REAL BW_speed = d_sim.control.speed_bw;        /* Speed loop bandwidth Hz */
 
     REAL Kt = 1.5 * motor_params.npp * motor_params.KE;  /* torque constant Nm/A */
 

@@ -77,7 +77,7 @@ class SuperConfig:
                 'Ld': params["定子D轴电感 [mH]"] * 1e-3,  # mH -> H
                 'Lq': params["定子Q轴电感 [mH]"] * 1e-3,
                 'KE': params["额定反电势系数 [Wb]"],
-                'Js': params["转动惯量 [kg.cm^2]"] * 1e-6,  # kg.cm^2 -> kg.m^2
+                'Js': params["转动惯量 [kg.cm^2]"] * 1e-4,  # kg.cm^2 -> kg.m^2
                 'Vdc': params["母线电压 [Vdc]"],
             }
         return None
@@ -95,8 +95,13 @@ class SuperConfig:
                     # 解析 key.section.item 格式
                     parts = key.split('.')
                     if len(parts) >= 2:
-                        # 取最后一部分作为结构体成员名，转小写避免与C宏冲突
-                        member_name = parts[-1].lower()
+                        # 取最后一部分作为结构体成员名
+                        # motor section保留原始大小写(Js, IN, KE等)，避免与电机库键名大小写不一致导致重复字段
+                        # 其他section转小写避免与C宏冲突
+                        if section == 'motor':
+                            member_name = parts[-1]
+                        else:
+                            member_name = parts[-1].lower()
                         section_data[member_name] = val
                     else:
                         section_data[key] = val

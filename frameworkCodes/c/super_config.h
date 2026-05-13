@@ -15,15 +15,8 @@ typedef struct {
 } ST_SIMULATION;
 
 typedef struct {
-    char name[128];
+    char NAME[128];
     long npp;
-    REAL in;
-    REAL r;
-    REAL ld;
-    REAL lq;
-    REAL ke;
-    REAL js;
-    long vdc;
     REAL IN;
     REAL R;
     REAL Ld;
@@ -31,7 +24,6 @@ typedef struct {
     REAL KE;
     REAL Js;
     long Vdc;
-    char NAME[128];
 } ST_MOTOR;
 
 typedef struct {

@@ -12,23 +12,15 @@ void init_d_sim() {
     d_sim.simulation.machine_sim_per_control = 1;
     d_sim.simulation.mode_select = 4;
 
-    strcpy(d_sim.motor.name, "SEW100W");
+    strcpy(d_sim.motor.NAME, "SEW100W");
     d_sim.motor.npp = 4;
-    d_sim.motor.in = 3.5;
-    d_sim.motor.r = 0.475;
-    d_sim.motor.ld = 0.0020499999999999997;
-    d_sim.motor.lq = 0.0020499999999999997;
-    d_sim.motor.ke = 0.0107;
-    d_sim.motor.js = 3.5e-08;
-    d_sim.motor.vdc = 48;
     d_sim.motor.IN = 3.5;
     d_sim.motor.R = 0.475;
     d_sim.motor.Ld = 0.0020499999999999997;
     d_sim.motor.Lq = 0.0020499999999999997;
     d_sim.motor.KE = 0.0107;
-    d_sim.motor.Js = 3.5e-08;
+    d_sim.motor.Js = 3.5000000000000004e-06;
     d_sim.motor.Vdc = 48;
-    strcpy(d_sim.motor.NAME, "SEW100W");
 
     d_sim.control.current_bw = 100.0;
     d_sim.control.speed_bw = 10.0;
