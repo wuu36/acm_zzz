@@ -18,7 +18,9 @@ CASES = {
     "1d_bw50":   {"speed_bw": 50,  "current_bw": 100, "label": "BW_speed=50, BW_curr=100", "group": "speed_sweep"},
     "2a_bw100":  {"speed_bw": 100, "current_bw": 100, "label": "BW_speed=100, BW_curr=100 [violate]", "group": "violate"},
     "2b_bw150":  {"speed_bw": 150, "current_bw": 100, "label": "BW_speed=150, BW_curr=100 [violate]", "group": "violate"},
-    "3a_curr50": {"speed_bw": 20,  "current_bw": 50,  "label": "BW_speed=20, BW_curr=50", "group": "current_sweep"},
+    "3a_curr50": {"speed_bw": 50,  "current_bw": 50,  "label": "BW_speed=50, BW_curr=50 [1:1]", "group": "current_sweep"},
+    "3c_curr250": {"speed_bw": 50,  "current_bw": 250, "label": "BW_speed=50, BW_curr=250 [1:5]", "group": "current_sweep"},
+    "3d_curr500": {"speed_bw": 50,  "current_bw": 500, "label": "BW_speed=50, BW_curr=500 [1:10]", "group": "current_sweep"},
 }
 
 COLORS = {
@@ -29,6 +31,8 @@ COLORS = {
     "2a_bw100":  "#9467bd",
     "2b_bw150":  "#8c564b",
     "3a_curr50": "#e377c2",
+    "3c_curr250": "#17becf",
+    "3d_curr500": "#bcbd22",
 }
 
 CMD_SPEED = 100.0
@@ -106,7 +110,7 @@ def plot_sub(ax, cases_to_plot, field, ylabel, ref_line=None, title=None):
 def plot_combined():
     speed_sweep = ["1a_bw5", "1b_bw10", "1c_bw20", "1d_bw50"]
     violate = ["2a_bw100", "2b_bw150"]
-    current_sweep = ["3a_curr50", "1c_bw20"]
+    current_sweep = ["3a_curr50", "1d_bw50", "3c_curr250", "3d_curr500"]
     all_cases = list(CASES.keys())
 
     fig, axes = plt.subplots(3, 3, figsize=(16, 12))
@@ -129,11 +133,11 @@ def plot_combined():
              title='Exp2: Cascade Violate - cmd_iQ')
 
     plot_sub(axes[2,0], current_sweep, 'varOmega', 'Speed [rad/s]',
-             ref_line=speed_ref, title='Exp3: BW_current - Speed')
+             ref_line=speed_ref, title='Exp3: BW_curr Sweep (BW_speed=50)')
     plot_sub(axes[2,1], current_sweep, 'iQ', 'iQ [A]',
-             ref_line=iq_ref, title='Exp3: BW_current - iQ')
-    plot_sub(axes[2,2], all_cases, 'varOmega', 'Speed [rad/s]',
-             ref_line=speed_ref, title='All Cases Overview - Speed')
+             ref_line=iq_ref, title='Exp3: BW_curr Sweep - iQ')
+    plot_sub(axes[2,2], current_sweep, 'cmd_iQ', 'cmd_iQ [A]',
+             title='Exp3: BW_curr Sweep - cmd_iQ')
 
     plt.tight_layout()
     out_path = os.path.join(RESULT_DIR, "bw_experiment_all.png")

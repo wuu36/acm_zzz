@@ -12,13 +12,15 @@ RESULT_DIR = os.path.join(PROJECT_ROOT, "dat", "bw_experiment")
 CONFIG_FILE = os.path.join(PROJECT_ROOT, "user_config.yaml")
 
 CASES = {
-    "1a_bw5":    {"speed_bw": 5,   "current_bw": 100, "label": "BW_speed=5, BW_current=100"},
-    "1b_bw10":   {"speed_bw": 10,  "current_bw": 100, "label": "BW_speed=10, BW_current=100"},
-    "1c_bw20":   {"speed_bw": 20,  "current_bw": 100, "label": "BW_speed=20, BW_current=100"},
-    "1d_bw50":   {"speed_bw": 50,  "current_bw": 100, "label": "BW_speed=50, BW_current=100"},
-    "2a_bw100":  {"speed_bw": 100, "current_bw": 100, "label": "BW_speed=100, BW_current=100 [violate]"},
-    "2b_bw150":  {"speed_bw": 150, "current_bw": 100, "label": "BW_speed=150, BW_current=100 [violate]"},
-    "3a_curr50": {"speed_bw": 20,  "current_bw": 50,  "label": "BW_speed=20, BW_current=50"},
+    "1a_bw5":    {"speed_bw": 5,   "current_bw": 100, "label": "BW_speed=5, BW_curr=100"},
+    "1b_bw10":   {"speed_bw": 10,  "current_bw": 100, "label": "BW_speed=10, BW_curr=100"},
+    "1c_bw20":   {"speed_bw": 20,  "current_bw": 100, "label": "BW_speed=20, BW_curr=100"},
+    "1d_bw50":   {"speed_bw": 50,  "current_bw": 100, "label": "BW_speed=50, BW_curr=100"},
+    "2a_bw100":  {"speed_bw": 100, "current_bw": 100, "label": "BW_speed=100, BW_curr=100 [violate]"},
+    "2b_bw150":  {"speed_bw": 150, "current_bw": 100, "label": "BW_speed=150, BW_curr=100 [violate]"},
+    "3a_curr50": {"speed_bw": 50,  "current_bw": 50,  "label": "BW_speed=50, BW_curr=50 [1:1 violate]"},
+    "3c_curr250": {"speed_bw": 50,  "current_bw": 250, "label": "BW_speed=50, BW_curr=250 [1:5]"},
+    "3d_curr500": {"speed_bw": 50,  "current_bw": 500, "label": "BW_speed=50, BW_curr=500 [1:10]"},
 }
 
 def load_config():
