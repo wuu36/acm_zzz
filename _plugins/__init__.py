@@ -1,6 +1,11 @@
 import os
 import importlib.util
 
+
+PLUGINS = []
+PLUGINS_PATH = []
+
+
 # 插件目录
 PLUGINS_DIR = os.path.dirname(os.path.abspath(__file__))
 

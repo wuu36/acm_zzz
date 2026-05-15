@@ -11,9 +11,9 @@ def main():
         elif sys.argv[1] == 'cplot':
             print(321)
     else:
-        print("else")
         os.chdir(os.path.dirname(__file__))
-        os.system('uv run streamlit run st_main.py')
+        # os.system('uv run streamlit run st_main.py')
+        os.system('uv run streamlit run st_main_zzz.py')
 
 
 if __name__ == "__main__":
