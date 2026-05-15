@@ -11,6 +11,7 @@ void init_d_sim() {
     d_sim.simulation.number_of_steps = 4000;
     d_sim.simulation.machine_sim_per_control = 1;
     d_sim.simulation.mode_select = 4;
+    d_sim.simulation.nunmber_of_steps = 4000;
 
     strcpy(d_sim.motor.NAME, "SEW100W");
     d_sim.motor.npp = 4;

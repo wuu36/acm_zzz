@@ -12,6 +12,7 @@ typedef struct {
     long number_of_steps;
     long machine_sim_per_control;
     long mode_select;
+    long nunmber_of_steps;
 } ST_SIMULATION;
 
 typedef struct {

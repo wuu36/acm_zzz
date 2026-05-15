@@ -3,6 +3,7 @@ simulation:
   sim.NUMBER_OF_STEPS: 4000
   sim.MACHINE_SIM_PER_CONTROL: 1
   sim.MODE_SELECT: 4
+  sim.NUNMBER_OF_STEPS: 4000
 motor:
   motor.NAME: SEW100W
   motor.npp: 4
