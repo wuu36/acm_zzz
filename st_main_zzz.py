@@ -23,6 +23,11 @@ def streamlit_config():
         )
     return
 
+def st_main_c(d_sim, user_config):
+    """C main function"""
+    st.title('⚙️Electric Machinery Simulation Visualization | C')
+    interact.c_save_run_module(d_sim, user_config)
+
 def main():
     st.session_state.DEFAULT_MOTOR_INDEX = 0
     st.session_state.DEFAULT_USER_INDEX = 2
@@ -43,10 +48,16 @@ def main():
     d_sim = interact.option_select_algorithm(d_sim, user_config)
     d_sim = user.user_pre_process(d_sim, user_config)
     interact.save_d_sim_2_dat_foler(d_sim)
+    interact.online_para_editor(user_config['default_var_list'], d_sim)
     # print(f"\nd_sim : {d_sim}")
 
+    if user_selected_mode == 'C':
+        st_main_c(d_sim, user_config)
+    else:
+        print("st_main_plugin")
 
-    # print("test")
+
+
 
 
 if __name__ == '__main__':

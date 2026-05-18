@@ -8,6 +8,11 @@ import _plugins
 import numpy as np
 import pandas as pd
 import yaml
+import time
+
+import super_config as super_config
+
+from streamlit.errors import StreamlitAPIException
 
 
 def save_d_sim_2_dat_foler(d_sim):
@@ -30,7 +35,7 @@ def user_selected_mode():
             label_visibility='collapsed', 
             index=0
         ) # 0 对应c语言仿真
-    return user_selected_mode
+    return mode
 
 def get_user_history():
     history = {}
@@ -179,3 +184,73 @@ def init_motor_lib() -> Dict[str, Any]:
         raise RuntimeError(
             "motor_library.json not found in input_motorLibrary/"
         )
+
+def save_para_config():
+    # save user input filters as json file
+
+    fname_session_state = f'{os.path.dirname(__file__)}/streamlit_user_session_data.json'
+    with open(fname_session_state, 'r') as f:
+        user_data = json.load(f)
+        
+    user_data['user_selected_motor'] = st.session_state.user_selected_motor
+    user_data[st.session_state.user_selected_motor] = {}
+    user_data[st.session_state.user_selected_motor]['d_sim'] = st.session_state.d_sim
+    
+    with open(fname_session_state, 'w') as f:
+        json.dump(user_data, f, ensure_ascii=False, indent=4)
+    return
+    
+def online_para_editor(default_var_list, d_sim):
+    """使用st.data_editor对可变参数进行编辑"""
+    # print(dict(d_sim))
+    # print(default_var_list)
+    df_user_input_motor_dict = pd.DataFrame.from_dict(d_sim, orient='index')
+    with st.sidebar:
+        with st.expander("可调参数: ", expanded=False):
+            try:
+                options = st.multiselect(
+                    'Parameter table',
+                    df_user_input_motor_dict.index.tolist(),
+                    default_var_list)
+            except StreamlitAPIException as e:
+                print(e)
+                print('清空你的streamllit_user_session_data.json文件再试一遍')
+                raise e
+            edited_df = st.data_editor(
+                df_user_input_motor_dict.loc[options], width='stretch')
+            for key in edited_df.index:
+                st.session_state.d_sim[key] = edited_df.loc[key].iloc[0]
+            if st.button(f"将上述设置保存为该电机默认设置", width='stretch'):
+                save_para_config()
+                
+
+################################################
+#                      C                       #
+################################################
+
+def c_save_run_module(d_sim, user_config):
+    acm = super_config.SuperConfig(st.session_state.user_selected_motor)
+    # acm.readDict(d_sim)
+    with st.sidebar:
+        # st.markdown('---')
+        # st.text_input('TODO')
+        if st.button('Save to C and compile', type="secondary", width='stretch'):
+            st.write(f'update super_config.h at {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
+            path_to_dat = os.path.dirname(__file__) + f'/frameworkCodes/dat/{st.session_state.user_selected_motor}.dat'
+            if os.path.exists(path_to_dat):
+                os.remove(path_to_dat)
+                
+            print(f"d_sim: {d_sim}")
+            print(f"user_config: {user_config}")
+            # acm.update_super_config(d_sim, user_config)
+            # acm.run_simulation()
+
+        # if st.button('Evaluate design to get xf', type="secondary", use_container_width=True):
+        #     st.write(f'update super_config.h at {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
+        #     path_to_dat = os.path.dirname(__file__) + f'/frameworkCodes/dat/{st.session_state.user_selected_motor}.dat'
+        #     if os.path.exists(path_to_dat):
+        #         os.remove(path_to_dat)
+        #     acm.update_super_config(d_sim, user_config)
+        #     # acm.run_simulation()
+        #     # import optimize
+        #     # optimize.optimize_main(params_list, self.d_sim, self.motor_name, max_p_value)

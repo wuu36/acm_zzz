@@ -29,3 +29,20 @@ test:
 output:
   output.DATA_FILE: ../dat/test_motor.dat
   output.verbose: true
+
+default_var_list:
+  - sim.CL_TS
+  - sim.NUMBER_OF_STEPS
+  - sim.MACHINE_SIM_PER_CONTROL
+  - sim.MODE_SELECT
+  - init.IN
+  - init.R
+  - init.Ld
+  - init.KE
+  - init.Js
+  # - sim.NUMBER_OF_STEPS
+  # - sim.CLTS
+  # - sim.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD
+  # - FOC.delta
+  # - FOC.CLBW_HZ
+
