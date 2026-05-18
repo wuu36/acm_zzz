@@ -5,7 +5,20 @@ import os
 import importlib.resources
 from typing import Dict, Any
 import _plugins
+import numpy as np
+import pandas as pd
+import yaml
 
+
+def save_d_sim_2_dat_foler(d_sim):
+    """将用户输入的参数保存到 dat 文件夹，方便使用cplot进行弹出框绘图"""
+    dat_dir = os.path.join(os.path.dirname(__file__), 'frameworkCodes', 'dat')
+    if not os.path.exists(dat_dir):
+        os.makedirs(dat_dir)
+    fname = os.path.join(dat_dir, f'{st.session_state.user_selected_motor}_d_sim.yaml')
+    with open(fname, 'w') as f:
+        yaml.dump(d_sim, f, default_flow_style=False, allow_unicode=True)
+        
 
 def user_selected_mode():
     with st.sidebar:
@@ -34,7 +47,7 @@ def get_user_history():
 
 def clear_history_module(history):
     with st.sidebar:
-        if st.button("清空历史数据", type='primary', use_container_width=True):
+        if st.button("清空历史数据", type='primary', width='stretch'):
             with open(os.path.dirname(__file__)+'/streamlit_user_session_data.json', 'w') as f:
                 f.write('{\n}')
             history = {}
@@ -48,12 +61,112 @@ def option_select_motor(history, d_user_config):
 
     with st.sidebar:
         st.header('🔌电机选择:')
-        user_selected_mode = st.selectbox(
+        user_selected_motor = st.selectbox(
             '从下拉列表选择一台电机：',
             motor_name_list,
             index=st.session_state.DEFAULT_MOTOR_INDEX,
             key='user_selected_motor'
         )
+
+        d_userMotor = dict()
+        if user_selected_motor == 'my-yaml-customer-motor':
+            print("in user_selected_motor")
+            st.write(f"开发者模式：直接根据现有的 d_user_config.yaml 文件中的电机数据进行仿真，源自：{history['user_selected_motor']}")
+            d_userMotor['motor'] = d_motorLib[history['user_selected_motor']]['基本参数']
+        else:
+            history['user_selected_motor'] = user_selected_motor
+            d_userMotor['motor'] = d_motorLib[user_selected_motor]['基本参数']
+            print(history)
+        # 电机参数名字翻译
+        d_userMotor['motor_simulated'] = {
+            'init.npp':     d_userMotor['motor']['极对数 [1]'],
+            'init.IN':      d_userMotor['motor']['额定电流 [Arms]'],
+            'init.R':       d_userMotor['motor']['定子电阻 [Ohm]'],
+            'init.Ld': 1e-3*d_userMotor['motor']['定子D轴电感 [mH]'],
+            'init.Lq': 1e-3*d_userMotor['motor']['定子Q轴电感 [mH]'],
+            'init.KE':      d_userMotor['motor']['额定反电势系数 [Wb]'],
+            'init.Rreq': 0.0 if np.isnan(d_userMotor['motor']['反伽马转子电阻 [Ohm]']) else d_userMotor['motor']['反伽马转子电阻 [Ohm]'],
+            'init.Js': 1e-4*d_userMotor['motor']['转动惯量 [kg.cm^2]'],
+            'init.Vdc':     d_userMotor['motor']['母线电压 [Vdc]'],
+        }
+
+        # d_sim: 保存到 或者 读取自 streamlit session
+        if st.session_state.user_selected_motor in history and 'd_sim' in history[st.session_state.user_selected_motor].keys():
+            print('Loading history d_user...')
+            d_sim = st.session_state.d_sim = history[st.session_state.user_selected_motor]['d_sim']
+        else:
+            st.session_state.d_sim = d_sim = dict()
+            # d_sim['name'] = user_selected_motor
+            d_sim.update(d_userMotor['motor_simulated'])            # 电机参数传递
+            d_sim.update(d_user_config['simulation'])               # 仿真参数传递
+
+        # d_sim = dict()
+        # d_sim.update(d_userMotor['motor_simulated'])
+        # d_sim.update(d_user_config['simulation'])
+        # st.session_state.d_sim = d_sim
+
+        df_basic_para_xlsx = pd.DataFrame.from_dict(d_userMotor['motor'], orient='index')
+        # df_basic_para_python = pd.DataFrame.from_dict(d_userMotor['motor_simulated'], orient='index')
+        
+        # 更新侧边栏表格
+        with st.expander(user_selected_motor + ' 的电机参数如下'):
+            st.data_editor(df_basic_para_xlsx, disabled=True, width='stretch')
+
+    return d_sim
+
+def option_select_algorithm(d_sim, user_config):
+    with st.sidebar:
+        # options_alg = [key for key in d_sim.keys() if key.startswith('user.select_algorithm')
+        # if len(options_alg) == 0:
+        #     st.write('No algorithm to select')
+        #     return d_sim
+        
+        d_who_is_usr = {
+            'USER_CJH':     101976,
+            'USER_XM':      102209,
+            'USER_TEST':    101616,
+        }
+        selected_key = st.selectbox('who_is_user:', d_who_is_usr.keys(), index=st.session_state.DEFAULT_USER_INDEX)
+        d_sim['user.who_is_user'] = d_who_is_usr[selected_key]
+
+        d_mode_select = {
+            'MODE_SELECT_PWM_DIRECT':         1,
+            'MODE_SELECT_VOLTAGE_OPEN_LOOP':  11,
+            'MODE_SELECT_WITHOUT_ENCODER_CURRENT_VECTOR_ROTATE': 2,
+            'MODE_SELECT_FOC':                      3,
+            'MODE_SELECT_FOC_SENSORLESS':           31,
+            'MODE_SELECT_INDIRECT_FOC':             32,
+            'MODE_SELECT_ID_SWEEPING_FREQ':         33,
+            'MODE_SELECT_IQ_SWEEPING_FREQ':         34,
+            'MODE_SELECT_FOC_AS_DC_GENERATOR':      35,
+            'MODE_SELECT_FOC_HARNEFORS_1998':       36,
+            'MODE_SELECT_VELOCITY_LOOP':            4,
+            'MODE_SELECT_VELOCITY_LOOP_SENSORLESS': 41,
+            'MODE_SELECT_TESTING_SENSORLESS':       42,
+            'MODE_SELECT_VELOCITY_LOOP_WC_TUNER':   43,
+            'MODE_SELECT_Marino2005':               44,
+            'MODE_SELECT_VELOCITY_LOOP_HARNEFORS_1998':   45,
+            'MODE_SELECT_SWEEPING_FREQ_FOR_VELOCITY_AND_CURRENT':   46,
+            'MODE_SELECT_VELOCITY_LOOP_USING_ESO_FOR_SPEED' : 47,
+            'MODE_SELECT_VARIABLE_PARAMETERS_VELOCITY_LOOP_SENSORLESS' : 48,
+            'MODE_SELECT_INVERTER_NONLINEARITY_SENSORLESS': 49,
+            'MODE_SELECT_POSITION_LOOP':            5,
+            'MODE_SELECT_COMMISSIONING':            9,
+            'MODE_SELECT_NYQUIST_PLOTTING':         91,
+            'MODE_SELECT_UDQ_GIVEN_TEST':           98,
+            'MODE_SELECT_GENERATOR':                8,
+            'MODE_SELECT_NB_MODE':                  99,
+        }
+        d_sim['user.mode_select_synchronous_motor'] = 41 # MODE_SELECT_VELOCITY_LOOP_SENSORLESS
+        d_sim['user.mode_select_induction_motor'] = 32   # MODE_SELECT_INDIRECT_FOC
+        if(d_sim['init.Rreq'] > 0):
+            selected_key = st.selectbox('mode_select_induction_motor:', d_mode_select.keys(), index=5)
+            d_sim['user.mode_select_indunction_motor'] = d_mode_select[selected_key]
+        else:
+            selected_key = st.selectbox('mode_select_synchronous_motor:', d_mode_select.keys(), index=11)
+            d_sim['user.mode_select_synchronous_motor'] = d_mode_select[selected_key]
+    return d_sim
+
 
 def init_motor_lib() -> Dict[str, Any]:
     try:

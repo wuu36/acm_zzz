@@ -4,6 +4,7 @@ import datetime
 import yaml
 import streamlit as st
 import st_interact_zzz as interact
+import user_script_main as user
 
 def streamlit_config():
     print("\n", '-='*15, datetime.datetime.now(), '=-'*15)
@@ -24,7 +25,7 @@ def streamlit_config():
 
 def main():
     st.session_state.DEFAULT_MOTOR_INDEX = 0
-    st.session_state.DEFAULT_USER_INDEX = 5
+    st.session_state.DEFAULT_USER_INDEX = 2
     streamlit_config()
 
     user_selected_mode = interact.user_selected_mode()
@@ -39,9 +40,13 @@ def main():
             st.write(user_config['simulation'])
 
     d_sim = interact.option_select_motor(user_history, user_config)
-    print(d_sim)
+    d_sim = interact.option_select_algorithm(d_sim, user_config)
+    d_sim = user.user_pre_process(d_sim, user_config)
+    interact.save_d_sim_2_dat_foler(d_sim)
+    # print(f"\nd_sim : {d_sim}")
 
-    print("test")
+
+    # print("test")
 
 
 if __name__ == '__main__':
