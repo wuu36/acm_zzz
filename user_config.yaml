@@ -46,3 +46,7 @@ default_var_list:
   # - FOC.delta
   # - FOC.CLBW_HZ
 
+signal_library:
+  - ACM.x[0]
+  - ACM.x[1]
+

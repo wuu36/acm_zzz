@@ -10,7 +10,7 @@ import pandas as pd
 import yaml
 import time
 
-import super_config as super_config
+import super_config_zzz as super_config
 
 from streamlit.errors import StreamlitAPIException
 
@@ -239,10 +239,9 @@ def c_save_run_module(d_sim, user_config):
             path_to_dat = os.path.dirname(__file__) + f'/frameworkCodes/dat/{st.session_state.user_selected_motor}.dat'
             if os.path.exists(path_to_dat):
                 os.remove(path_to_dat)
-                
-            print(f"d_sim: {d_sim}")
-            print(f"user_config: {user_config}")
-            # acm.update_super_config(d_sim, user_config)
+            # print(f"\nd_sim: {d_sim}")
+            # print(f"\nuser_config: {user_config}")
+            acm.update_super_config(d_sim, user_config)
             # acm.run_simulation()
 
         # if st.button('Evaluate design to get xf', type="secondary", use_container_width=True):

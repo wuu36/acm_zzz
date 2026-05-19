@@ -247,6 +247,27 @@ class SuperConfig:
         for name in motors.keys():
             print(f"  - {name}")
         return list(motors.keys())
+    
+    def parse_d_sim(self, d_sim):
+        # print(d_sim)
+        data = {}
+        for key, val in d_sim.items():
+            try:
+                parent_node, child_node = key.split('.')
+            except ValueError as e:
+                print(f'yaml[simulation]里的字符串{key}要用点分离')
+                print(f'yaml[simulation]里的字符串{key}要用点分离')
+                print(f'yaml[simulation]里的字符串{key}要用点分离')
+                raise e
+            if parent_node not in data:
+                data[parent_node] = {}
+            data[parent_node][child_node] = val
+        print(f"\ndata is : {data}")
+        return data
+    
+    # def update_super_config(self, d_sim, user_config, user_extend_settings=None):
+    #     self.super_config_header_content = ""
+    #     self.d_sim_as_data = self.parse_d_sim(d_sim)
 
 
 
