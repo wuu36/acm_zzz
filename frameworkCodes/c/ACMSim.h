@@ -42,22 +42,44 @@ struct MachineSimulated {
     int npp;
     REAL npp_inv;
 
+    // # electrical parameters
+    REAL R;
+    REAL Ld;
+    REAL Lq;
+    REAL KE;
+    REAL Rreq;
+
+    // # mechanical parameters
+    REAL Js;
+    REAL Js_inv;
+
 
     // # states
+    int NS;
     REAL x[MACHINE_NUMBER_OF_STATES];
+    REAL x_dot[MACHINE_NUMBER_OF_STATES];
     REAL timebase;
 
     // # inputs
     REAL uAB_inverter[2];
     REAL uAB[2];
     REAL uDQ[2];
+    REAL TLoad;
 
     // # outputs
-
+    REAL varTheta;
+    REAL varOmega;
     REAL omega_syn;
-
+    REAL omega_slip;
     REAL theta_d;
+    REAL KA;
+    REAL iDQ[2];
+    REAL iAB[2];
+    
+    REAL psi_AB[2];
+    REAL emf_AB[2];
 
+    REAL Tem;
     REAL cosT;
     REAL sinT;
     REAL cosT_delay_1p5omegaTs;
@@ -73,6 +95,7 @@ struct MachineSimulated {
     GLOBAL VARIABLE DECLARATIONS
 ==============================================================================*/
 
+extern struct MachineSimulated ACM;
 
 /*==============================================================================
     INLINE FUNCTION DEFINITIONS
@@ -87,11 +110,14 @@ void init_Machine();
 int machine_simulation();
 void inverter_model();
 void measurement();
+void RK4(REAL t, REAL *x, REAL hs);
+void DYNAMICS_MACHINE(REAL t, REAL x[], REAL fx[]);
 
 /* declaration of utility function defined in utility.c */
-
+void write_data_to_file(FILE *fw);
 void write_header_to_file(FILE *fw);
 void print_info();
+int isNumber(REAL x);
 
 
 #endif /* _ACMSIM_H */

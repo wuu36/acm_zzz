@@ -23,7 +23,7 @@ void init_d_sim() {
     d_sim.user.set_iq_command = 2;
     d_sim.user.verbose = TRUE;
     d_sim.user.who_is_user = 101616;
-    d_sim.user.mode_select_synchronous_motor = 41;
+    d_sim.user.mode_select_synchronous_motor = 11;
     d_sim.user.mode_select_induction_motor = 32;
 
 }

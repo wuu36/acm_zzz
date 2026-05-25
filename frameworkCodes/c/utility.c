@@ -31,6 +31,12 @@
 // Function declarations.
 //============================================================================
 
+
+// 判断是否为有效浮点数
+int isNumber(REAL x){
+    return(x == x);
+}
+
 void print_info(){
     #if WHO_IS_USER == USER_TEST
         printf("\nwho is user == user test\n");
@@ -38,6 +44,7 @@ void print_info(){
 }
 
 #if PC_SIMULATION == TRUE
+    #define DOWN_SAMPLE 1
     /* 写变量meta-data到文件 */
     void write_header_to_file(FILE *fw){
         if(d_sim.user.verbose){
@@ -51,6 +58,19 @@ void print_info(){
             // fclose(fw2);
         }
         
+    }
+
+    /* 写变量值到文件 */
+    void write_data_to_file(FILE *fw){
+        // static int bool_animate_on = FALSE;
+        // static int j = 0, jj = 0;
+        static int j = 0;
+        {
+            if (++j == DOWN_SAMPLE){
+                j = 0;
+                fprintf(fw, DATA_FORMAT, DATA_DETAILS);
+            }
+        } 
     }
 #endif
 

@@ -41,6 +41,8 @@ int axisCnt = 0;
 st_motor_parameters t_motor_1={0};
 st_enc t_enc_1={0};
 
+st_controller_outputs t_O_1={0};
+
 
 //============================================================================
 // Local Function Prototypes
@@ -67,6 +69,9 @@ void init_debug(){
 
     (*debug).set_id_command = 0.0;
     (*debug).set_iq_command = d_sim.user.set_iq_command;
+
+    (*debug).vvvf_voltage = 3.0;
+    (*debug).vvvf_frequency = 5.0;
 }
 
 static void overwrite_di_sim(){
@@ -88,8 +93,45 @@ void allocate_CTRL(struct ControllerForExperiment *p){
     if(axisCnt==0){
         p->motor = &t_motor_1;
         p->enc = &t_enc_1;
+
+        p->o = &t_O_1;
     }
 
+}
+
+/* main switch as per MODE_SELECT */
+int main_switch(long mode_select){
+    static long mode_select_last = 0;
+    static int mode_initialized = FALSE;
+    if(mode_select != mode_select_last) mode_initialized = FALSE;
+    switch (mode_select){
+        case MODE_SELECT_PWM_DIRECT: // 1
+            // printf("in pwm direct\n");
+            (*CTRL).o->cmd_uAB_to_inverter[0] = 10.0;   // Ualpha
+            (*CTRL).o->cmd_uAB_to_inverter[1] = 0.0;    // Ubeta
+            (*CTRL).svgen1.Ta = 0.7;
+            (*CTRL).svgen1.Tb = 0.3;
+            (*CTRL).svgen1.Tc = 0.5;
+            return 0; 
+            break;
+        case MODE_SELECT_VOLTAGE_OPEN_LOOP: // 11
+            // printf("in voltage open loop\n");
+            (*CTRL).o->cmd_uAB_to_inverter[0] = (*debug).vvvf_voltage * cos((*debug).vvvf_frequency*2*M_PI*CTRL->timebase);
+            (*CTRL).o->cmd_uAB_to_inverter[1] = (*debug).vvvf_voltage * sin((*debug).vvvf_frequency*2*M_PI*CTRL->timebase);
+            break;
+        case MODE_SELECT_VELOCITY_LOOP: // 4
+            printf("in velocity loop\n");
+            break;
+        case MODE_SELECT_GENERATOR: // 8
+            break;
+        default:
+            printf("in default\n");
+            break;
+    }
+
+
+
+    return 0;
 }
 
 /* other only simulation codes */

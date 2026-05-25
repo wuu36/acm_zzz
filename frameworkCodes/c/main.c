@@ -54,9 +54,20 @@ int main(){
         if(++dfe_counter == d_sim.sim.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD){
             dfe_counter = 0; (*CTRL).timebase += CL_TS; // DSP中的时间
             measurement();      // 采样， 包括dsp中的adc采样等
+            write_data_to_file(fw);
+
+            #if WHO_IS_USER == USER_BEZIER
+            #endif
+            main_switch((*debug).mode_select);
+            if((*debug).mode_select != MODE_SELECT_GENERATOR){
+                ACM.uAB[0] = (*CTRL).o->cmd_uAB_to_inverter[0];
+                ACM.uAB[1] = (*CTRL).o->cmd_uAB_to_inverter[1];
+            }
         }
-        if(_%100000==0){
-            printf("_=%d\n", _);
+        if(_==0 || _==1 || _==5 || _==50 || _==1000){
+            printf("_=%d uAB=[%.2f,%.2f] uABinv=[%.2f,%.2f] uDQ=[%.2f,%.2f] x[1]=%.6f x[2]=%.6f x[3]=%.6f x[4]=%.6f Tem=%.6f\n", 
+                _, ACM.uAB[0], ACM.uAB[1], ACM.uAB_inverter[0], ACM.uAB_inverter[1],
+                ACM.uDQ[0], ACM.uDQ[1], ACM.x[1], ACM.x[2], ACM.x[3], ACM.x[4], ACM.Tem);
         }
     }
 
@@ -73,6 +84,29 @@ void init_Machine(){
     ACM.npp = d_sim.init.npp;
     ACM.npp_inv = 1.0/ACM.npp;
 
+    // electrical parameters
+    ACM.R = d_sim.init.R * 1.0;
+    ACM.Ld = d_sim.init.Ld;
+    ACM.Lq = d_sim.init.Lq * 1.0;
+    ACM.KE = d_sim.init.KE * 1.0;
+    ACM.KA = ACM.KE;
+    ACM.Rreq = d_sim.init.Rreq;
+
+    // mechanical parameters
+    ACM.Js = d_sim.init.Js; // kg*m^2
+    ACM.Js_inv = 1.0 / ACM.Js;
+
+    // states
+    ACM.NS = MACHINE_NUMBER_OF_STATES;
+    int i;
+    for(i=0;i<ACM.NS;++i){
+        ACM.x[i] = 0.0;
+        ACM.x_dot[i] = 0.0;
+    }
+    if(ACM.Rreq <= 0){
+        ACM.x[2] = ACM.KE; /* PMSM: KA = KE */
+    }
+
     // inputs
     
     ACM.uAB_inverter[0] = 0.0;
@@ -81,13 +115,21 @@ void init_Machine(){
     ACM.uAB[1] = 0.0;
     ACM.uDQ[0] = 0.0;
     ACM.uDQ[1] = 0.0;
+    ACM.TLoad = 0;
     
     // outputs
+    ACM.varTheta = 0.0;
+    ACM.varOmega = 0.0;
 
     ACM.omega_syn = 0.0;
-
+    ACM.omega_slip = 0.0;
     ACM.theta_d = 0.0;
+    ACM.iDQ[0] = 0.0;
+    ACM.iDQ[1] = 0.0;
+    ACM.iAB[0] = 0.0;
+    ACM.iAB[1] = 0.0;
 
+    ACM.Tem = 0.0;
     ACM.cosT_delay_1p5omegaTs = cos(ACM.x[0] * ACM.npp);
     ACM.sinT_delay_1p5omegaTs = sin(ACM.x[0] * ACM.npp);
 
@@ -114,8 +156,124 @@ int machine_simulation(){
     }
 
     // 数值积分
+    RK4(ACM.timebase, ACM.x, ACM.Ts);
+
+    // 电机转子位置接口
+    // get M-T frame quantities for fun
+    ACM.varTheta = ACM.x[0];
+    ACM.theta_d = ACM.varTheta*ACM.npp;
+    ACM.cosT = cos(ACM.theta_d);
+    ACM.sinT = sin(ACM.theta_d);
+
+    // 电机电流接口
+    ACM.iDQ[0] = ACM.x[3];
+    ACM.iDQ[1] = ACM.x[4];
+    ACM.iAB[0] = MT2A(ACM.iDQ[0], ACM.iDQ[1], ACM.cosT, ACM.sinT);
+    ACM.iAB[1] = MT2B(ACM.iDQ[0], ACM.iDQ[1], ACM.cosT, ACM.sinT);
+    
+    // 电机磁链接口
+    ACM.KA = ACM.x[2];
+    ACM.psi_AB[0] = ACM.KA * ACM.cosT;
+    ACM.psi_AB[1] = ACM.KA * ACM.sinT;
+    ACM.emf_AB[0] = ACM.x_dot[2] * ACM.cosT + ACM.KA * -sin(ACM.theta_d) * (ACM.npp * ACM.x_dot[0]);
+    ACM.emf_AB[1] = ACM.x_dot[2] * ACM.sinT + ACM.KA *  cos(ACM.theta_d) * (ACM.npp * ACM.x_dot[0]);
+    
+    // 转子(假想)d轴位置限幅
+    while(ACM.theta_d > M_PI) ACM.theta_d -= 2*M_PI;
+    while(ACM.theta_d < -M_PI) ACM.theta_d += 2*M_PI;  // 反转
+    
+    // 简单的程序跑飞检测，比如电机转速无穷大则停止程序
+    if(isNumber(ACM.varOmega)){
+        return FALSE;
+    }else{
+        printf("ACM.varOmega is %g\n", ACM.varOmega);
+        return TRUE;
+    }
+
 
     return FALSE;
+}
+
+void DYNAMICS_MACHINE(REAL t, REAL x[], REAL fx[]){
+
+    // varTheta = x[0]
+    // varOmega = x[1]
+    // ACM.theta_d_elec = x[0]*ACM.npp
+    // ACM.omega_r = x[1]*ACM.npp
+    REAL KA = x[2];
+    REAL iD = x[3];
+    REAL iQ = x[4];
+    if(KA == 0.0){
+        ACM.omega_slip = 0.0;
+    }else{
+        ACM.omega_slip = ACM.Rreq * iQ / KA;
+    }
+    ACM.omega_syn  = x[1]*ACM.npp + ACM.omega_slip;
+
+    // 电磁子系统 (KA, iD, iQ as x[2], x[3], x[4])
+    if (ACM.Rreq > 0){
+        // s KA
+        fx[2] = ACM.Rreq*iD - ACM.Rreq / (ACM.Ld - ACM.Lq) * KA; // [Apply Park Transorm to (31b)]
+        // s iD
+        fx[3] = (ACM.uDQ[0] - ACM.R*iD + ACM.omega_syn*ACM.Lq*iQ - fx[2]) / ACM.Lq; // (6a)
+    }else if (ACM.Rreq < 0){
+        printf("ACM.Rreq is used to calculate slip so it must be zero for PMSM.");
+    }else{
+            // note fx[3] * ACM.Lq = ACM.uDQ[0] - ACM.R*iD + omega*ACM.Lq*iQ - fx[2]
+            //  =>  fx[3] * ACM.Lq = ACM.uDQ[0] - ACM.R*iD + omega*ACM.Lq*iQ - (ACM.Ld - ACM.Lq) * fx[3] - 0.0
+            //  =>  fx[3] * ACM.Ld = ACM.uDQ[0] - ACM.R*iD + omega*ACM.Lq*iQ
+            //  =>  s iD
+        // s iD
+        fx[3] = (ACM.uDQ[0] - ACM.R*iD + ACM.omega_syn*ACM.Lq*iQ) / ACM.Ld;
+        // s KA 
+        fx[2] = (ACM.Ld - ACM.Lq) * fx[3] + 0.0;
+    }
+    // s iQ
+    fx[4] = (ACM.uDQ[1] - ACM.R*iQ - ACM.omega_syn*ACM.Lq*iD - ACM.omega_syn * KA) / ACM.Lq;
+    // printf("%g, %g, %g, %g,  |  %g, %g, %g, %g \n",
+    //     ACM.timebase, ACM.uDQ[1], iQ, ACM.omega_syn, iD, ACM.omega_syn, KA, fx[4]
+    // );
+
+    // 机械子系统 (varTheta, varOmega as x[0], x[1])
+    ACM.Tem = CLARKE_TRANS_TORQUE_GAIN * ACM.npp * KA * iQ; // 电磁转矩计算
+    fx[0] = x[1] + ACM.omega_slip / ACM.npp; // mech. angular rotor position (accumulated)
+    fx[1] = (ACM.Tem - ACM.TLoad) / ACM.Js;  // mech. angular rotor speed
+}
+
+
+void RK4(REAL t, REAL *x, REAL hs){ // 四阶龙格库塔法
+    #define NS MACHINE_NUMBER_OF_STATES
+
+    REAL k1[NS], k2[NS], k3[NS], k4[NS], xk[NS];
+    REAL fx[NS];
+    int i;
+
+    DYNAMICS_MACHINE(t, x, fx); // timer.t,
+    for(i=0;i<NS;++i){        
+        k1[i] = fx[i] * hs;
+        xk[i] = x[i] + k1[i]*0.5;
+    }
+    
+    DYNAMICS_MACHINE(t, xk, fx); // timer.t+hs/2., 
+    for(i=0;i<NS;++i){        
+        k2[i] = fx[i] * hs;
+        xk[i] = x[i] + k2[i]*0.5;
+    }
+    
+    DYNAMICS_MACHINE(t, xk, fx); // timer.t+hs/2., 
+    for(i=0;i<NS;++i){        
+        k3[i] = fx[i] * hs;
+        xk[i] = x[i] + k3[i];
+    }
+    
+    DYNAMICS_MACHINE(t, xk, fx); // timer.t+hs, 
+    for(i=0;i<NS;++i){        
+        k4[i] = fx[i] * hs;
+        x[i] = x[i] + (k1[i] + 2*(k2[i] + k3[i]) + k4[i])*one_over_six;
+        // derivatives
+        ACM.x_dot[i] = (k1[i] + 2*(k2[i] + k3[i]) + k4[i])*one_over_six / hs; 
+    }
+    #undef NS
 }
 
 /* 逆变器建模 */

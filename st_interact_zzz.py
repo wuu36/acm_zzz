@@ -161,13 +161,15 @@ def option_select_algorithm(d_sim, user_config):
             'MODE_SELECT_GENERATOR':                8,
             'MODE_SELECT_NB_MODE':                  99,
         }
-        d_sim['user.mode_select_synchronous_motor'] = 41 # MODE_SELECT_VELOCITY_LOOP_SENSORLESS
+        # d_sim['user.mode_select_synchronous_motor'] = 41 # MODE_SELECT_VELOCITY_LOOP_SENSORLESS
+        d_sim['user.mode_select_synchronous_motor'] = 1 # MODE_SELECT_PWM_DIRECT 
         d_sim['user.mode_select_induction_motor'] = 32   # MODE_SELECT_INDIRECT_FOC
         if(d_sim['init.Rreq'] > 0):
             selected_key = st.selectbox('mode_select_induction_motor:', d_mode_select.keys(), index=5)
             d_sim['user.mode_select_indunction_motor'] = d_mode_select[selected_key]
         else:
-            selected_key = st.selectbox('mode_select_synchronous_motor:', d_mode_select.keys(), index=11)
+            # selected_key = st.selectbox('mode_select_synchronous_motor:', d_mode_select.keys(), index=11)
+            selected_key = st.selectbox('mode_select_synchronous_motor:', d_mode_select.keys(), index=1)
             d_sim['user.mode_select_synchronous_motor'] = d_mode_select[selected_key]
     return d_sim
 
@@ -241,8 +243,8 @@ def c_save_run_module(d_sim, user_config):
             # print(f"\nd_sim: {d_sim}")
             # print(f"\nuser_config: {user_config}")
             acm.update_super_config(d_sim, user_config)
-            # acm.compile_simulation()
-            # acm.run_simulation()
+            acm.compile_simulation()
+            acm.run_simulation()
             # acm.run_simulation()
 
         # if st.button('Evaluate design to get xf', type="secondary", use_container_width=True):
