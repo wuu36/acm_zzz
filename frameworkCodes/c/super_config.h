@@ -43,9 +43,9 @@ typedef struct {
 
 
 
-#define DATA_FORMAT "%g,%g\n"
-#define DATA_LABELS "ACM.x[0],ACM.x[1]\n"
-#define DATA_DETAILS ACM.x[0],ACM.x[1]
+#define DATA_FORMAT "%g,%g,%g,%g,%g,%g,%g\n"
+#define DATA_LABELS "ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.theta_d/M_PI*180,ACM.varOmega * MECH_RAD_PER_SEC_2_RPM\n"
+#define DATA_DETAILS ACM.x[0],ACM.x[1],ACM.x[2],ACM.x[3],ACM.x[4],ACM.theta_d/M_PI*180,ACM.varOmega * MECH_RAD_PER_SEC_2_RPM
 
 
 #define DATA_FILE_NAME "../dat/SEW100W (SF40B01030C3004).dat"

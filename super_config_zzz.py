@@ -138,5 +138,27 @@ class SuperConfig:
             print("make not found, trying...")
             return False
     
-    def run_simulation(self):
+    def run_simulation(self, target="motor_simulation"):
         print("run simulation...")
+        exe_name = f"{target}.exe"
+        exe_path = os.path.join(self.c_path, exe_name)
+        
+        if not os.path.exists(exe_path):
+            print(f"executable not found: {exe_path}")
+            return False
+        
+        try:
+            result = subprocess.run(
+                [exe_path],
+                cwd=self.c_path,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            print(result.stdout)
+            if result.stderr:
+                print(f"stderr: {result.stderr}")
+            return True
+        except subprocess.TimeoutExpired:
+            print("simulation timeout")
+            return False

@@ -1,4 +1,10 @@
+- [常用的命令行](#常用的命令行)
+- [RK4（四阶龙格-库塔法）](#rk4四阶龙格-库塔法)
+- [DQ轴电压方程](#dq轴电压方程)
+- [需要trace数据添加方法](#需要trace数据添加方法)
 
+
+# 常用的命令行
 
 ```shell
 uv init
@@ -136,3 +142,9 @@ $$\psi_s = \psi_\alpha + j \psi_\beta$$
 
 在数学上，乘以$e^{j\theta_e}$的物理意义就是"逆时针旋转$\theta_e$的角度"
 
+
+# 需要trace数据添加方法
+1. 在user_config.yaml文件中， 找到属性signal_library
+2. 添加需要trace的数据，需要与c中的命名相同
+3. 运行main.py之后，在浏览器端电机simulation之后，会生成super_config.h
+4. 对应的data format / data labels / data details就是生成的trace 数据

@@ -58,4 +58,9 @@ default_var_list:
 signal_library:
   - ACM.x[0]
   - ACM.x[1]
+  - ACM.x[2]
+  - ACM.x[3]
+  - ACM.x[4]
+  - ACM.theta_d/M_PI*180
+  - ACM.varOmega * MECH_RAD_PER_SEC_2_RPM
 
