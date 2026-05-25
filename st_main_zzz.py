@@ -43,13 +43,12 @@ def main():
     with st.sidebar:
         with st.expander("仿真参数"):
             st.write(user_config['simulation'])
-
     d_sim = interact.option_select_motor(user_history, user_config)
     d_sim = interact.option_select_algorithm(d_sim, user_config)
     d_sim = user.user_pre_process(d_sim, user_config)
+    print(123)
     interact.save_d_sim_2_dat_foler(d_sim)
     interact.online_para_editor(user_config['default_var_list'], d_sim)
-    # print(f"\nd_sim : {d_sim}")
 
     if user_selected_mode == 'C':
         st_main_c(d_sim, user_config)

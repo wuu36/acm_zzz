@@ -1,9 +1,18 @@
 simulation:
-  sim.CL_TS: 5.0e-05
+  sim.CLTS: 5.0e-05
   sim.NUMBER_OF_STEPS: 4000
   sim.MACHINE_SIM_PER_CONTROL: 1
   sim.MODE_SELECT: 4
   sim.NUNMBER_OF_STEPS: 4000
+  sim.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD: 1 # 500 enable simulation of SVPWM in ACMSimPy
+  user.set_iq_command: 2
+  
+
+  ##############################
+  ####用户自己使用的变量在下面####
+  ##############################
+  user.verbose: TRUE
+
 motor:
   motor.NAME: SEW100W
   motor.npp: 4
@@ -31,7 +40,7 @@ output:
   output.verbose: true
 
 default_var_list:
-  - sim.CL_TS
+  - sim.CLTS
   - sim.NUMBER_OF_STEPS
   - sim.MACHINE_SIM_PER_CONTROL
   - sim.MODE_SELECT

@@ -5,6 +5,7 @@
     INCLUDES
 ==============================================================================*/
 
+#include "super_config.h"
 
 /*==============================================================================
     DEFINES
@@ -49,6 +50,15 @@ typedef int BOOL;
 #define AB2T(alpha, beta, cosT, sinT)   (-(alpha)*(sinT) + (beta)*(cosT) )
 #define MT2A(d, q, cosT, sinT)  ( (d)*(cosT) - (q)*(sinT) )
 #define MT2B(d, q, cosT, sinT)  ( (d)*(sinT) + (q)*(cosT) )
+
+
+/* 控制策略 */
+
+#define CL_TS           (d_sim.sim.CLTS)
+#define CL_TS_INVERSE   (1.0 / CL_TS)
+
+#define MACHINE_TS          (CL_TS/d_sim.sim.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD)
+#define MACHINE_TS_INVERSE  (1.0/MACHINE_TS)
 
 /*==============================================================================
     TYPES

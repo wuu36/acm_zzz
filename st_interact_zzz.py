@@ -59,10 +59,9 @@ def clear_history_module(history):
     return history
 
 def option_select_motor(history, d_user_config):
-    print(f"user history : {history}")
+    print(f"history @option_select_motor : {history}")
     d_motorLib = init_motor_lib()
     motor_name_list = list(d_motorLib.keys()) + ['my-yaml-customer-motor']
-    print(motor_name_list)
 
     with st.sidebar:
         st.header('🔌电机选择:')
@@ -81,7 +80,7 @@ def option_select_motor(history, d_user_config):
         else:
             history['user_selected_motor'] = user_selected_motor
             d_userMotor['motor'] = d_motorLib[user_selected_motor]['基本参数']
-            print(history)
+            print(f"history @option_select_motor :{history}")
         # 电机参数名字翻译
         d_userMotor['motor_simulated'] = {
             'init.npp':     d_userMotor['motor']['极对数 [1]'],
@@ -242,6 +241,8 @@ def c_save_run_module(d_sim, user_config):
             # print(f"\nd_sim: {d_sim}")
             # print(f"\nuser_config: {user_config}")
             acm.update_super_config(d_sim, user_config)
+            # acm.compile_simulation()
+            # acm.run_simulation()
             # acm.run_simulation()
 
         # if st.button('Evaluate design to get xf', type="secondary", use_container_width=True):

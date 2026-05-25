@@ -14,6 +14,7 @@ SRC = main.c utility.c
 UTIL_SRC = utility.c
 CTRL_SRC = main_switch.c
 CONFIG_SRC = super_config.c
+# CONFIG_SRC = 
 
 # Compiler settings
 CC = gcc
@@ -26,6 +27,7 @@ TARGET_FOC = foc_test.exe
 TARGET_FOC_LOAD = foc_load_test.exe
 TARGET_VELOCITY = velocity_test.exe
 TARGET_VVVF = vvvf_test.exe
+TARGET_SIMULATION = motor_simulation.exe
 
 # Default target
 all: $(TARGET)
@@ -49,6 +51,13 @@ $(TARGET_VELOCITY): main_velocity_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
 # VVVF test simulation
 $(TARGET_VVVF): main_vvvf_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
 	$(CC) $(CFLAGS) -o $@ main_vvvf_test.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC) -lm
+	
+# motor simulation 
+$(TARGET_SIMULATION): main.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC)
+	$(CC) $(CFLAGS) -o $@ main.c $(UTIL_SRC) $(CTRL_SRC) $(CONFIG_SRC) -lm
+# $(TARGET_SIMULATION): main.c 
+# 	$(CC) $(CFLAGS) -o $@ main.c -lm
+
 
 # Run simulation
 run: $(TARGET)
@@ -70,6 +79,9 @@ velocity_test: $(TARGET_VELOCITY)
 vvvf_test: $(TARGET_VVVF)
 	./$(TARGET_VVVF)
 
+# Build motor_simulation and run
+motor: $(TARGET_SIMULATION)
+	./$(TARGET_SIMULATION)
 
 # Test
 test:

@@ -1,4 +1,5 @@
 
+import os 
 
 
 def user_pre_process(d_sim, user_config):
@@ -16,9 +17,12 @@ def user_bezier_super_config(motor_name, data, user_extend_settings, super_confi
         if user_extend_settings.get("bezier_moo"):
             print("bezier")
         elif user_extend_settings.get("bezier_C_save"):
-            print("bezier 123")
+            print("bezier_C_save")
+
+
     else:
-        print("beizer 123")
-    
+        print("beizer else")
+        if data['user'].get('bezier_order'):
+            print(111111)
     return super_config_C_content, super_config_header_content
     

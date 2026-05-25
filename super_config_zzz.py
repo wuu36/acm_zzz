@@ -1,5 +1,6 @@
 import os
 import user_script_main
+import subprocess
 
 
 TEMPLATE_CONTENT_FRONT = '''// This header file is automatically generated. Any modification to this file will get lost.\n#ifndef SUPER_CONFIG_H\n#define SUPER_CONFIG_H\n#include "typedef.h"\n\n'''
@@ -22,6 +23,9 @@ class SuperConfig:
         self.super_config_header_content = ""
         self.super_config_header_content_end = TEMPLATE_CONTENT_END
         self.super_config_C_content = ""
+
+        self.base_path = os.path.dirname(os.path.abspath(__file__))
+        self.c_path = os.path.join(self.base_path, "frameworkCodes", "c")
 
     def parse_d_sim(self, d_sim):
         data = {}
@@ -69,9 +73,9 @@ class SuperConfig:
 
         self.super_config_C_content, self.super_config_header_content = user_script_main.user_bezier_super_config(self.motor_name, data, user_extend_settings, self.super_config_C_content, self.super_config_header_content)
 
-        print(self.super_config_header_content)
-        print(self.super_config_C_content)
-        print(f"\n user_extend_setting: {user_extend_settings}")
+        # print(self.super_config_header_content)
+        # print(self.super_config_C_content)
+        # print(f"\n user_extend_setting: {user_extend_settings}")
     
     def data_file_generate_format(self, data_details):
         data_format_str = "\n\n\n#define DATA_FORMAT \""
@@ -88,9 +92,7 @@ class SuperConfig:
 
     def update_super_config(self, d_sim, user_config, user_extend_settings=None):
         self.super_config_header_content = ""
-        # print(f"d_sim befor parse: {d_sim}")
         self.d_sim_as_data = self.parse_d_sim(d_sim)
-        # print(f"d_sim after parse: {d_sim}")
         self.super_config_generator(self.d_sim_as_data, user_extend_settings)
         
 
@@ -109,3 +111,32 @@ class SuperConfig:
             file.write(config_content)
         with open(path_to_c, 'w') as file:
             file.write(self.super_config_C_content)
+            
+    def compile_simulation(self, target="motor_simulation"):
+        print("compile simulation...")
+        exe_name = f"{target}.exe"
+        make_cmd = ["make", "-B", exe_name]
+        print(f"c_path: {self.c_path}")
+
+        try:
+            result = subprocess.run(
+                make_cmd,
+                cwd=self.c_path,
+                text=True,
+                timeout=60
+            )
+            if result.returncode !=0:
+                print(f"compilation error:\n{result.stderr}")
+                return False
+            print(f"compilation successful")
+            return True
+        except subprocess.TimeoutExpired:
+            print("compilation timeout")
+            return False
+        except FileNotFoundError:
+            # make 不可用， 尝试...
+            print("make not found, trying...")
+            return False
+    
+    def run_simulation(self):
+        print("run simulation...")

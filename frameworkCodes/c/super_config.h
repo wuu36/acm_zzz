@@ -6,7 +6,7 @@
 #define WHO_IS_USER 101616 
 
 typedef struct {
-    REAL npp;
+    long npp;
     REAL IN;
     REAL R;
     REAL Ld;
@@ -18,14 +18,17 @@ typedef struct {
 } ST_init;
 
 typedef struct {
-    REAL CL_TS;
-    REAL NUMBER_OF_STEPS;
-    REAL MACHINE_SIM_PER_CONTROL;
-    REAL MODE_SELECT;
+    REAL CLTS;
+    long NUMBER_OF_STEPS;
+    long MACHINE_SIM_PER_CONTROL;
+    long MODE_SELECT;
     long NUNMBER_OF_STEPS;
+    long MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD;
 } ST_sim;
 
 typedef struct {
+    long set_iq_command;
+    BOOL verbose;
     long who_is_user;
     long mode_select_synchronous_motor;
     long mode_select_induction_motor;

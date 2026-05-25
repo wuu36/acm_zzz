@@ -3,16 +3,11 @@
 //============================================================================
 
 #include "ACMSim.h"
-#include "main_switch.h"
-#include "super_config.h"
-#include "math.h"
 
 
 //============================================================================
 // Local Macros
 //============================================================================
-
-#define VL_EXE_PER_CL_EXE 10    /* speed loop runs 10x slower than current loop */
 
 //============================================================================
 // Local Types
@@ -30,202 +25,96 @@
 // Public Variables
 //============================================================================
 
-Controller CTRL;
+struct ControllerForExperiment CTRL_1;
+struct ControllerForExperiment *CTRL;
 
-PI_CONTROLLER PID_iD = PI_CONTROLLER_DEFAULTS;
-PI_CONTROLLER PID_iQ = PI_CONTROLLER_DEFAULTS;
-PI_CONTROLLER PID_Speed = PI_CONTROLLER_DEFAULTS;
+struct DebugExperiment debug_1;
+struct DebugExperiment *debug = &debug_1;
 
-st_motor_parametes motor_params;
 
-st_controller_inputs CTRL_inputs;
-st_controller_states CTRL_states;
-st_controller_outputs CTRL_outputs;
+/* 定义顶级结构体(指针的集合) */
+ST_D_SIM d_sim;
+int axisCnt = 0;
+
+
+/* 定义内存空间 */
+st_motor_parameters t_motor_1={0};
+st_enc t_enc_1={0};
+
 
 //============================================================================
 // Local Function Prototypes
 //============================================================================
 
+static void overwrite_di_sim();
+
 //============================================================================
 // Function declarations.
 //============================================================================
 
-void init_motor_params(void) {
-    motor_params.R = d_sim.motor.R;
-    motor_params.Ld = d_sim.motor.Ld;
-    motor_params.Lq = d_sim.motor.Lq;
-    motor_params.Ld_inv = 1.0 / d_sim.motor.Ld;
-    motor_params.Lq_inv = 1.0 / d_sim.motor.Lq;
-    motor_params.KE = d_sim.motor.KE;
-    motor_params.npp = d_sim.motor.npp;
-    motor_params.npp_inv = 1.0 / d_sim.motor.npp;
-    motor_params.Js = d_sim.motor.Js;
-    motor_params.Js_inv = 1.0 / d_sim.motor.Js;
-
-    CTRL.motor = &motor_params;
-}
-
-void init_PI_controllers(void) {
-    REAL BW_current = d_sim.control.current_bw;    /* current loop bandwidth Hz */
-    REAL BW_speed = d_sim.control.speed_bw;        /* Speed loop bandwidth Hz */
-
-    REAL Kt = 1.5 * motor_params.npp * motor_params.KE;  /* torque constant Nm/A */
-
-    /* D-axis current PI */
-    PID_iD.Kp = motor_params.Ld * BW_current * 2 * M_PI;
-    PID_iD.Ki = PID_iD.Kp * motor_params.R / motor_params.Ld * CL_TS;
-    PID_iD.Umax = d_sim.motor.Vdc / 2.0;
-    PID_iD.Umin = -PID_iD.Umax;
-
-    /* Q-axis current PI */
-    PID_iQ.Kp = motor_params.Lq * BW_current * 2 * M_PI;
-    PID_iQ.Ki = PID_iQ.Kp * motor_params.R / motor_params.Lq * CL_TS;
-    PID_iQ.Umax = d_sim.motor.Vdc / 2.0;
-    PID_iQ.Umin = -PID_iQ.Umax;
-
-    /* Speed PI (output is current reference in Amperes) */
-    PID_Speed.Kp = motor_params.Js * BW_speed * 2 * M_PI / Kt;
-    PID_Speed.Ki = PID_Speed.Kp * BW_speed * 2 * M_PI * CL_TS;
-    PID_Speed.Umax = d_sim.motor.IN;  /* Limit to rated current */
-    PID_Speed.Umin = -PID_Speed.Umax;
-
-    /* assign PI controllers to state structure */
-    CTRL_states.iD = &PID_iD;
-    CTRL_states.iQ = &PID_iQ;
-    CTRL_states.Speed = &PID_Speed;
-
-    CTRL_states.vc_count = 0;
-}
-
-
-void init_CTRL(void) {
-    init_motor_params();
-    init_PI_controllers();
-
-    CTRL.i = &CTRL_inputs;
-    CTRL.s = &CTRL_states;
-    CTRL.o = &CTRL_outputs;
-
-    CTRL.timebase = 0.0;
-
-    /* Initialize inputs */
-    CTRL_inputs.theta_d_elec = 0.0;
-    CTRL_inputs.varOmega = 0.0;
-    CTRL_inputs.iAB[0] = 0.0;
-    CTRL_inputs.iAB[1] = 0.0;
-    CTRL_inputs.iDQ[0] = 0.0;
-    CTRL_inputs.iDQ[1] = 0.0;
-    CTRL_inputs.cmd_varOmega = 0.0;
-    CTRL_inputs.cmd_iDQ[0] = 0.0;
-    CTRL_inputs.cmd_iDQ[1] = 0.0;
-    CTRL_inputs.cmd_uDQ[0] = 0.0;
-    CTRL_inputs.cmd_uDQ[1] = 0.0;
-
-    /* Initialize states */
-    CTRL_states.cosT = 1.0;
-    CTRL_states.sinT = 0.0;
-    CTRL_states.omega_syn = 0.0;
-
-    /* Initialize outputs */
-    CTRL_outputs.cmd_uDQ[0] = 0.0;
-    CTRL_outputs.cmd_uDQ[1] = 0.0;
-    CTRL_outputs.cmd_uAB[0] = 0.0;
-    CTRL_outputs.cmd_uAB[1] = 0.0;
-}
-
-void main_switch(long mode_select) {
-    switch (mode_select)
-    {
-    case MODE_SELECT_PWM_DIRECT:
-        /* direct PWM output - bypass all control */
-        break;
-    case MODE_SELECT_VOLTAGE_OPEN_LOOP:
-        CTRL_states.cosT = cos(CTRL_inputs.theta_d_elec);
-        CTRL_states.sinT = sin(CTRL_inputs.theta_d_elec);
-        CTRL_outputs.cmd_uDQ[0] = CTRL_inputs.cmd_uDQ[0];
-        CTRL_outputs.cmd_uDQ[1] = CTRL_inputs.cmd_uDQ[1];
-        CTRL_outputs.cmd_uAB[0] = MT2A(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
-                                       CTRL_states.cosT, CTRL_states.sinT);
-        CTRL_outputs.cmd_uAB[1] = MT2B(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
-                                       CTRL_states.cosT, CTRL_states.sinT);
-        break;
-    case MODE_SELECT_FOC:
-        /* FOC current loop only */
-        FOC_with_current_control(CTRL_inputs.theta_d_elec, CTRL_inputs.iAB);
-        break;
-    case MODE_SELECT_VELOCITY_LOOP:
-        /* velocity loop + FOC */
-        FOC_with_velocity_control(CTRL_inputs.theta_d_elec,
-                                CTRL_inputs.varOmega,
-                                CTRL_inputs.cmd_varOmega,
-                                CTRL_inputs.iAB);
-        break;
-    case MODE_SELECT_POSITION_LOOP:
-        printf("position loop not implemented in phase 2");
-    default:
-        printf("unknown loop not implemented in phase 2\n");
-        break;
-    }
-}
-
-void _onlyFOC(REAL theta_d_elec, REAL iAB[2]) {
-    /* step 1: park transform - convert AB currents to DQ */
-    CTRL_states.cosT = cos(theta_d_elec);
-    CTRL_states.sinT = sin(theta_d_elec);
-
-    CTRL_inputs.iDQ[0] = AB2M(iAB[0], iAB[1], CTRL_states.cosT, CTRL_states.sinT);
-    CTRL_inputs.iDQ[1] = AB2T(iAB[0], iAB[1], CTRL_states.cosT, CTRL_states.sinT);
-
-    /* step 2: Current PI controllers */
-    PID_iD.Ref = CTRL_inputs.cmd_iDQ[0];
-    PID_iD.Fbk = CTRL_inputs.iDQ[0];
-    PI_MACRO(PID_iD);
-
-    PID_iQ.Ref = CTRL_inputs.cmd_iDQ[1];
-    PID_iQ.Fbk = CTRL_inputs.iDQ[1];
-    PI_MACRO(PID_iQ);
-
-    /* step 3: Output voltage */
-    CTRL_outputs.cmd_uDQ[0] = PID_iD.Out;
-    CTRL_outputs.cmd_uDQ[1] = PID_iQ.Out;
-
-    /* step 4: Inverse Park transform - convert DQ voltages to AB */
-    CTRL_outputs.cmd_uAB[0] = MT2A(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
-                                   CTRL_states.cosT, CTRL_states.sinT);
-    CTRL_outputs.cmd_uAB[1] = MT2B(CTRL_outputs.cmd_uDQ[0], CTRL_outputs.cmd_uDQ[1],
-                                   CTRL_states.cosT, CTRL_states.sinT);
-}
-
-void FOC_with_velocity_control(REAL theta_d_elec, REAL varOmega,
-                                REAL cmd_varOmega, REAL iAB[2]) {
-    /* step1: velocity controller */
-    CTRL_inputs.cmd_iDQ[1] = _velocityController(cmd_varOmega, varOmega);
-
-    /* step2: id command */
-    CTRL_inputs.cmd_iDQ[0] = 0.0;
-
-    /* step 3: FOC current loop */
-    _onlyFOC(theta_d_elec, iAB);
-}
-
-void FOC_with_current_control(REAL theta_d_elec, REAL iAB[2]) {
-    CTRL_inputs.cmd_iDQ[0] = CTRL_inputs.cmd_iDQ[0];
-    CTRL_inputs.cmd_iDQ[1] = CTRL_inputs.cmd_iDQ[1];
-
-    _onlyFOC(theta_d_elec, iAB);
-}
-
-REAL _velocityController(REAL cmd_varOmega, REAL varOmega) {
-    /* execute speed PI at lower rate */
-    if (++CTRL_states.vc_count >= VL_EXE_PER_CL_EXE) {
-        CTRL_states.vc_count = 0;
-
-        PID_Speed.Ref = cmd_varOmega;
-        PID_Speed.Fbk = varOmega;
-        PI_MACRO(PID_Speed);
+void init_debug(){
+    debug = &debug_1;
+    (*debug).error = 0;
+    (*debug).who_is_user = d_sim.user.who_is_user;
+    if(d_sim.init.Rreq>0){
+        (*debug).mode_select = d_sim.user.mode_select_induction_motor;
+    }else{
+        (*debug).mode_select = d_sim.user.mode_select_synchronous_motor;
     }
 
-    return PID_Speed.Out;
+    (*debug).Overwrite_Current_Frequency = 50.0;
+    (*debug).Overwrite_theta_d           = 0.0;
+
+    (*debug).set_id_command = 0.0;
+    (*debug).set_iq_command = d_sim.user.set_iq_command;
 }
+
+static void overwrite_di_sim(){
+
+}
+
+void init_experiment(){
+    overwrite_di_sim();
+    init_CTRL();
+}
+
+void init_CTRL(){
+    allocate_CTRL(CTRL);
+
+    /* basic quantities */
+}
+
+void allocate_CTRL(struct ControllerForExperiment *p){
+    if(axisCnt==0){
+        p->motor = &t_motor_1;
+        p->enc = &t_enc_1;
+    }
+
+}
+
+/* other only simulation codes */
+#if PC_SIMULATION
+void _user_time_varying_parameters(){
+    // ACM.R  = d_sim.init.R  * 2.5;
+    // ACM.Ld = d_sim.init.Ld * 0.25;
+    // ACM.Lq = d_sim.init.Lq * 0.25;
+    
+    // 0. 参数时变
+    // if (fabsf((*CTRL).timebase-0.025)<CL_TS){
+    //     printf("[Runtime] Rotor inertia of the simulated machine has changed! Js=%g\n", ACM.Js);
+        // ACM.Js     = 0.1 * d_sim.init.Js; // kg.m^2 0.41500000000000004
+        // ACM.Js_inv = 1.0 / ACM.Js;
+    // }
+    // if (fabsf((*CTRL).timebase-0.035)<CL_TS){
+    //     printf("[Runtime] Rotor inertia of the simulated machine has changed! Js=%g\n", ACM.Js);
+    //     ACM.Js     = 0.1 * d_sim.init.Js; // kg.m^2
+    //     ACM.Js_inv = 1.0 / ACM.Js;
+    // }
+    ///
+    // Changing KE should go to the init_Machine to change the initial value of KE if u are running at a PMSM Ld = Lq
+    ///
+}
+#endif
+
 
 //-------------------- End of File -------------------------------------------
