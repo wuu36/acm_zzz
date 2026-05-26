@@ -77,6 +77,20 @@ int main(){
 }
 
 void measurement(){
+    // 本函数每隔采样时间 CL_TS 执行一次
+
+    // 下面出现的US_C, IS_C等，都是全局的宏变量，方便在不同的.c文件内共享
+
+    // 电压测量
+    (*CTRL).i->Vdc = d_sim.init.Vdc;
+    #define CURRENT_OFFSET_A 0//0.1//0.2//0.05
+    #define CURRENT_OFFSET_B 0//0.1//0.2//0.05
+    (*CTRL).i->iAB[0] = ACM.iAB[0] + 1*CURRENT_OFFSET_A;
+    (*CTRL).i->iAB[1] = ACM.iAB[1] + 1*CURRENT_OFFSET_B;
+
+    // exact measurement of d-axis angle
+    (*CTRL).i->varTheta = ACM.varTheta;
+    (*CTRL).i->varOmega = ACM.varOmega;
     
 }
 
@@ -157,6 +171,9 @@ int machine_simulation(){
 
     // 数值积分
     RK4(ACM.timebase, ACM.x, ACM.Ts);
+    
+    // 电机转速接口
+    ACM.varOmega = ACM.x[1];
 
     // 电机转子位置接口
     // get M-T frame quantities for fun

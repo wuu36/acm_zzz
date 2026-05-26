@@ -19,10 +19,11 @@ void init_d_sim() {
     d_sim.sim.MODE_SELECT = 4;
     d_sim.sim.NUNMBER_OF_STEPS = 4000;
     d_sim.sim.MACHINE_SIMULATIONs_PER_SAMPLING_PERIOD = 1;
+    d_sim.sim.DOWN_SAMPLE = 1;
 
     d_sim.user.set_iq_command = 2;
     d_sim.user.verbose = TRUE;
-    d_sim.user.who_is_user = 101616;
+    d_sim.user.who_is_user = 102209;
     d_sim.user.mode_select_synchronous_motor = 11;
     d_sim.user.mode_select_induction_motor = 32;
 

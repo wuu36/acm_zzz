@@ -63,7 +63,8 @@ config:
   plt:
     font.weight: 400
     font.size: 20
-    legend.fontsize: 20
+    legend.fontsize: 15
+    legend.labelspacing: 0.3
     axes.facecolor: 'none'
     axes.labelcolor: '#000000'
     axes.axisbelow: 'False'
@@ -123,6 +124,13 @@ signal_library:
   - ACM.TLoad
   - ACM.Tem
   - ACM.KA
+  - (*CTRL).i->cmd_varOmega * MECH_RAD_PER_SEC_2_RPM
+  - (*CTRL).i->iAB[0]
+  - (*CTRL).i->iAB[1]
+  - (*CTRL).i->iDQ[0]
+  - (*CTRL).i->iDQ[1]
+  - (*CTRL).timebase
+
 
 cplot:
   title:
@@ -137,16 +145,16 @@ cplot:
       y:
         -
           y_data: (*CTRL).i->cmd_varOmega * MECH_RAD_PER_SEC_2_RPM
-          y_label: $\Omega^*$
+          y_label: $\omega^*$
         -
           y_data: ACM.varOmega * MECH_RAD_PER_SEC_2_RPM
-          y_label: ACM.$\Omega$
+          y_label: ACM.$\omega$
         -
           y_data: (*CTRL).i->varOmega * MECH_RAD_PER_SEC_2_RPM
-          y_label: CTRL.$\Omega$
+          y_label: CTRL.$\omega$
         -
           y_data: OFSR.esoaf.xOmg * ELEC_RAD_PER_SEC_2_RPM
-          y_label: OFSR.esoaf.$\Omega$
+          y_label: OFSR.esoaf.$\omega$
     - # Subplot 2
       title: iQ
       y_title: Q-axis Current [A]
@@ -211,16 +219,16 @@ cplot:
         -
           y_data: (*CTRL).timebase
           y_label: time
-    # - # Subplot 7
-    #   title: Active Flux
-    #   y_title: Active Flux 
-    #   y:
-    #     -
-    #       y_data: ACM.KA
-    #       y_label: 'KA'
-    #     -
-    #       y_data: ACM.x[2]
-    #       y_label: 'x[2]'
-    #     -
-    #       y_data: (*CTRL).i->cmd_psi
-    #       y_label: '$\psi^*$'
+    - # Subplot 7
+      title: Active Flux
+      y_title: Active Flux 
+      y:
+        -
+          y_data: ACM.KA
+          y_label: 'KA'
+        -
+          y_data: ACM.x[2]
+          y_label: 'x[2]'
+        -
+          y_data: (*CTRL).i->cmd_psi
+          y_label: '$\psi^*$'

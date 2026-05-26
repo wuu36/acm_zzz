@@ -52,6 +52,22 @@ typedef struct {
 } st_enc; // encoder
 
 typedef struct {
+    // commands
+    REAL cmd_varTheta;  // mechanical
+    REAL cmd_varOmega;  // mechanical
+
+    REAL cmd_iDQ[2];
+    REAL cmd_uDQ[2];
+    // feedback
+    REAL Vdc;
+
+    REAL varTheta;  // mechanical
+    REAL varOmega;  // mechanical
+    REAL iAB[2];
+    REAL iDQ[2];
+} st_controller_inputs;
+
+typedef struct {
     // voltage commands
     REAL cmd_uAB[4];
     REAL cmd_uDQ[4];
@@ -80,7 +96,7 @@ struct ControllerForExperiment{
 
 
     /* black box model | controller quantities */
-
+    st_controller_inputs *i;
     st_controller_outputs *o;
 };
 

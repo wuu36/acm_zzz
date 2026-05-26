@@ -41,6 +41,7 @@ int axisCnt = 0;
 st_motor_parameters t_motor_1={0};
 st_enc t_enc_1={0};
 
+st_controller_inputs t_I_1={0};
 st_controller_outputs t_O_1={0};
 
 
@@ -94,6 +95,7 @@ void allocate_CTRL(struct ControllerForExperiment *p){
         p->motor = &t_motor_1;
         p->enc = &t_enc_1;
 
+        p->i = &t_I_1;
         p->o = &t_O_1;
     }
 
@@ -118,6 +120,9 @@ int main_switch(long mode_select){
             // printf("in voltage open loop\n");
             (*CTRL).o->cmd_uAB_to_inverter[0] = (*debug).vvvf_voltage * cos((*debug).vvvf_frequency*2*M_PI*CTRL->timebase);
             (*CTRL).o->cmd_uAB_to_inverter[1] = (*debug).vvvf_voltage * sin((*debug).vvvf_frequency*2*M_PI*CTRL->timebase);
+            
+            (*CTRL).i->iDQ[0] = ACM.iDQ[0];
+            (*CTRL).i->iDQ[1] = ACM.iDQ[1];
             break;
         case MODE_SELECT_VELOCITY_LOOP: // 4
             printf("in velocity loop\n");
