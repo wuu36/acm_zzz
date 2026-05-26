@@ -27,6 +27,7 @@ def st_main_c(d_sim, user_config):
     """C main function"""
     st.title('⚙️Electric Machinery Simulation Visualization | C')
     interact.c_save_run_module(d_sim, user_config)
+    interact.c_simulation_visual_module(d_sim)
 
 def main():
     st.session_state.DEFAULT_MOTOR_INDEX = 0

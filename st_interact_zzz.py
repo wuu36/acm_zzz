@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 import yaml
 import time
-
 import super_config_zzz as super_config
+import output_postProcessing.cplot as cplot
 
 from streamlit.errors import StreamlitAPIException
 
@@ -256,3 +256,22 @@ def c_save_run_module(d_sim, user_config):
         #     # acm.run_simulation()
         #     # import optimize
         #     # optimize.optimize_main(params_list, self.d_sim, self.motor_name, max_p_value)
+        
+def c_simulation_visual_module(d_sim):
+    st.info("运行如下命令弹出 matplotlib 交互窗口观察波形", icon="ℹ️")
+    st.code("python main.py cplot \""+st.session_state.user_selected_motor+"\"")
+
+    st.session_state.bool_OverwriteUserConfigYaml = st.checkbox("overwrite user_config.yaml with user's yaml file", value=True)
+    
+    if not st.checkbox("custom cplot display", value=True):
+        figs = cplot.main(st.session_state.user_selected_motor, d_sim)
+    else:
+        row = st.number_input('row', value=1, min_value=1, max_value=10, step=1)
+        column = st.number_input('column', value=2, min_value=1, max_value=10, step=1)
+        figs = cplot.main(st.session_state.user_selected_motor, d_sim, f'{row}x{column}')
+        st.code("uv run python main.py cplot\""+st.session_state.user_selected_motor+"\""+f" {row}x{column}")
+    if len(figs) == 0:
+        st.warning("no data to plot")
+    else:
+        for fig in figs:
+            st.pyplot(fig)
