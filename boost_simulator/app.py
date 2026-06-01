@@ -1,9 +1,8 @@
-import streamlit.components.v1 as components
 import streamlit as st
+import streamlit.components.v1 as components
 from ui.sidebar import render_sidebar
 from ui.metric_cards import render_metric_cards
-# from viz.circuit_diagram import generate_boost_circuit_svg
-from viz.circuit_diagram_v2 import generate_boost_circuit_svg
+from viz.circuit_diagram import generate_boost_circuit_svg
 from core.transient import simulate_transient, get_steady_waveforms
 
 st.set_page_config(
@@ -16,7 +15,6 @@ st.set_page_config(
 st.title("⚡ Boost 升压电路仿真器")
 
 params = render_sidebar()
-# print(params)
 
 if params:
     results = render_metric_cards(params)
@@ -27,12 +25,12 @@ if params:
     st.markdown("---")
     st.subheader("电路拓扑图")
     svg_code = generate_boost_circuit_svg(params, results)
-    components.html(svg_code, height=500)
+    components.html(svg_code, height=300)
 
     st.markdown("---")
     with st.spinner("运行时域仿真..."):
         D = results["D"]
-        if params["control_mode"] == "闭环(自动稳定)":
+        if params["control_mode"] == "闭环 (自动稳压)":
             sim_mode = "closed_loop"
             Vout_target = params["Vout_target"]
             Kp = params["Kp"]
@@ -73,19 +71,3 @@ if params:
     with col4:
         st.subheader("参数扫描")
         st.info("Phase 5 将在此处显示 L/C/f sweep 分析")
-
-    # col1, col2 = st.columns(2)
-    # with col1:
-    #     st.subheader("电感电流波形")
-    #     st.info("Phase 5 将在此处显示 IL(t) 波形图")
-    # with col2:
-    #     st.subheader("输出电压波形")
-    #     st.info("Phase 5 将在此处显示 Vout(t) 波形图")
-
-    # col3, col4 = st.columns(2)
-    # with col3:
-    #     st.subheader("开关节点电压")
-    #     st.info("Phase 5 将在此处显示 Vsw(t) 波形图")
-    # with col4:
-    #     st.subheader("增益曲线 (D vs Vout)")
-    #     st.info("Phase 5 将在此处显示增益对比曲线")

@@ -4,19 +4,19 @@ from utils.validators import validate_params, validate_closed_loop
 
 def render_metric_cards(params):
     Vin = params["Vin"]
-    D = params["D"]
     R = params["R"]
     L = params["L"]
     C = params["C"]
     f = params["f"]
     RL = params["RL"]
     Vd = params["Vd"]
+    D = params["D"]
     control_mode = params["control_mode"]
-    
+
     validation_errors = []
     validation_warnings = []
-    
-    if control_mode == "开环(固定占空比)":
+
+    if control_mode == "开环 (固定占空比)":
         v = validate_params(Vin, R, L, C, f, D, RL, Vd)
         validation_errors = v["errors"]
         validation_warnings = v["warnings"]
@@ -32,7 +32,7 @@ def render_metric_cards(params):
         if D is None or D < 0.01 or D > D_MAX:
             st.error(f"无法计算满足目标 Vout={Vout_target}V 的占空比")
             return None
-        
+
     for err in validation_errors:
         st.error(err)
     for warn in validation_warnings:
@@ -40,9 +40,8 @@ def render_metric_cards(params):
 
     if validation_errors:
         return None
-    
+
     results = solve_steady_state(Vin, D, R, L, C, f, RL, Vd)
-    # print(f"resutls: {results}")
 
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("工作模式", results["mode"])
