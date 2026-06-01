@@ -5,6 +5,7 @@ from ui.metric_cards import render_metric_cards
 # from viz.circuit_diagram import generate_boost_circuit_svg
 from viz.circuit_diagram_v2 import generate_boost_circuit_svg
 from core.transient import simulate_transient, get_steady_waveforms
+from viz.waveforms import plot_il_waveform, plot_vout_waveform, plot_vsw_waveform
 
 st.set_page_config(
     page_title="Boost 升压电路仿真器",
@@ -51,28 +52,50 @@ if params:
             Vout_target=Vout_target, Kp=Kp, Ki=Ki,
         )
 
-    steady_wave = get_steady_waveforms(sim_data, params["f"], num_periods=3)
-
-    st.subheader("稳态波形 (最后 3 个周期)")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("仿真 Vout (稳态均值)", f"{sim_data['vC_steady_avg']:.2f} V")
-        st.metric("仿真 IL (稳态均值)", f"{sim_data['iL_steady_avg']:.2f} A")
-    with col2:
-        st.metric("稳态 Vout 纹波", f"{(sim_data['vC_steady_peak'] - sim_data['vC_steady_min'])*1e3:.2f} mV")
-        st.metric("稳态 IL 峰值", f"{sim_data['iL_steady_peak']:.2f} A")
-
-    st.info("Phase 5 将使用 Plotly 绘制交互式波形图 IL(t), Vout(t), Vsw(t)")
+    steady_wave = get_steady_waveforms(sim_data, params["f"], num_periods=10)
+    
+    st.subheader("仿真统计")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("仿真 Vout (稳态均值)", f"{sim_data['vC_steady_avg']:.2f} V")
+    col2.metric("仿真 IL (稳态均值)", f"{sim_data['iL_steady_avg']:.2f} A")
+    col3.metric("稳态 Vout 纹波", f"{(sim_data['vC_steady_peak'] - sim_data['vC_steady_min'])*1e3:.2f} mV")
+    col4.metric("稳态 IL 峰值", f"{sim_data['iL_steady_peak']:.2f} A")
 
     st.markdown("---")
-    col3, col4 = st.columns(2)
-    with col3:
-        st.subheader("增益曲线 (D vs Vout)")
-        st.info("Phase 5 将在此处显示理想 vs 有损增益对比曲线")
-    with col4:
-        st.subheader("参数扫描")
-        st.info("Phase 5 将在此处显示 L/C/f sweep 分析")
+    st.subheader("电感电流波形 IL(t)")
+    fig_il = plot_il_waveform(steady_wave, results, params)
+    st.plotly_chart(fig_il, use_container_width=True)
+
+    st.subheader("输出电压波形 Vout(t)")
+    fig_vout = plot_vout_waveform(steady_wave, results, params)
+    st.plotly_chart(fig_vout, use_container_width=True)
+
+    st.subheader("开关节点电压 Vsw(t)")
+    fig_vsw = plot_vsw_waveform(steady_wave, results, params)
+    st.plotly_chart(fig_vsw, use_container_width=True)
+
+    st.markdown("---")
+
+    # st.subheader("稳态波形 (最后 3 个周期)")
+
+    # col1, col2 = st.columns(2)
+    # with col1:
+    #     st.metric("仿真 Vout (稳态均值)", f"{sim_data['vC_steady_avg']:.2f} V")
+    #     st.metric("仿真 IL (稳态均值)", f"{sim_data['iL_steady_avg']:.2f} A")
+    # with col2:
+    #     st.metric("稳态 Vout 纹波", f"{(sim_data['vC_steady_peak'] - sim_data['vC_steady_min'])*1e3:.2f} mV")
+    #     st.metric("稳态 IL 峰值", f"{sim_data['iL_steady_peak']:.2f} A")
+
+    # st.info("Phase 5 将使用 Plotly 绘制交互式波形图 IL(t), Vout(t), Vsw(t)")
+
+    # st.markdown("---")
+    # col3, col4 = st.columns(2)
+    # with col3:
+    #     st.subheader("增益曲线 (D vs Vout)")
+    #     st.info("Phase 5 将在此处显示理想 vs 有损增益对比曲线")
+    # with col4:
+    #     st.subheader("参数扫描")
+    #     st.info("Phase 5 将在此处显示 L/C/f sweep 分析")
 
     # col1, col2 = st.columns(2)
     # with col1:

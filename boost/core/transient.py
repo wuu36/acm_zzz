@@ -5,7 +5,7 @@ D_MAX = 0.90
 def simulate_transient(Vin, D, R, L, C, RL, Vd, f,
                        mode="open_loop",
                        Vout_target=None, Kp=0.1, Ki=10.0,
-                       t_sim=5e-3, dt=1e-7):
+                       t_sim=10e-3, dt=1e-7):
     T = 1.0 / f
     N = int(t_sim / dt)
     steps_per_period = int(T / dt)
@@ -16,8 +16,10 @@ def simulate_transient(Vin, D, R, L, C, RL, Vd, f,
     switch_state = np.zeros(N)
     t = np.linspace(0, t_sim, N)
 
-    iL[0] = 0.0
-    vC[0] = Vin
+    IL_init = Vin / (R * (1 - D)) * D * 0.5
+    vC_init = Vin + (Vin / (1 - D) - Vin) * 0.6
+    iL[0] = max(IL_init, 0.0)
+    vC[0] = max(vC_init, Vin)
 
     pi_integral = 0.0
     current_D = D
@@ -43,23 +45,23 @@ def simulate_transient(Vin, D, R, L, C, RL, Vd, f,
             di_dt = (Vin - iL[n] * RL) / L
             dv_dt = -vC[n] / (R * C)
         else:
-            if iL[n] > 0:
+            if iL[n] > 1e-10:
                 di_dt = (Vin - vC[n] - iL[n] * RL - Vd) / L
                 dv_dt = (iL[n] - vC[n] / R) / C
             else:
-                di_dt = Vin / L
+                di_dt = 0.0
                 dv_dt = -vC[n] / (R * C)
 
         iL[n+1] = iL[n] + di_dt * dt
         vC[n+1] = vC[n] + dv_dt * dt
 
-        if iL[n+1] < 0 and mode == "open_loop":
+        if iL[n+1] < 0:
             iL[n+1] = 0.0
 
         if vC[n+1] < 0:
             vC[n+1] = 0.0
 
-    steady_start = int(N * 0.8)
+    steady_start = int(N * 0.6)
 
     return {
         "t": t,
@@ -74,7 +76,7 @@ def simulate_transient(Vin, D, R, L, C, RL, Vd, f,
         "vC_steady_min": np.min(vC[steady_start:]),
     }
 
-def get_steady_waveforms(sim_data, f, num_periods=3):
+def get_steady_waveforms(sim_data, f, num_periods=10):
     T = 1.0 / f
     t = sim_data["t"]
     N = len(t)

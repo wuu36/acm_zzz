@@ -23,8 +23,9 @@ def solve_dcm_gain(Vin, D, R, L, f):
 
 def solve_ccm_with_loss(Vin, D, R, RL, Vd=0.5):
     D = np.clip(D, 0.01, D_MAX)
-    gain = (1 / (1 - D)) * (R / (R + RL / (1-D)**2))
-    Vout = Vin * gain - Vd
+    Veff = Vin - Vd * (1 - D)
+    gain = (1 / (1 - D)) * (R / (R + RL / (1 - D)**2))
+    Vout = Veff * gain
     return Vout, gain
 
 def solve_closed_loop_duty(Vin, Vout_target, R, RL, Vd=0.5):
@@ -34,12 +35,14 @@ def solve_closed_loop_duty(Vin, Vout_target, R, RL, Vd=0.5):
     for _ in range(20):
         Vout_calc, _ = solve_ccm_with_loss(Vin, D_approx, R, RL, Vd)
         error = Vout_target - Vout_calc
-        d_error = Vin * R * RL / ((R + RL / (1 - D_approx)**2)**2 * (1 - D_approx)**3) + Vin / (1 - D_approx)**2 * (1 - R * RL / ((R + RL / (1 - D_approx)**2)**2 * (1 - D_approx)**2))
-        if abs(d_error) < 1e-10:
+        step = 0.002
+        Vout_step, _ = solve_ccm_with_loss(Vin, D_approx + step, R, RL, Vd)
+        dVout_dD = (Vout_step - Vout_calc) / step
+        if abs(dVout_dD) < 1e-6:
             break
-        D_approx = D_approx + error / d_error
+        D_approx = D_approx + error / dVout_dD
         D_approx = np.clip(D_approx, 0.01, D_MAX)
-        if abs(error) < 0.001:
+        if abs(error) < 0.01:
             break
     return float(D_approx)
 
