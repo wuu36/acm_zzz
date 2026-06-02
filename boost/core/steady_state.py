@@ -17,7 +17,7 @@ def solve_ccm_ideal(Vin, D):
 
 def solve_dcm_gain(Vin, D, R, L, f):
     D = np.clip(D, 0.01, D_MAX)
-    discriminant = 1 + 8 * L * f / (R * D**2)
+    discriminant = 1 + 2 * D**2 * R / (L * f)
     gain = (1 + np.sqrt(discriminant)) / 2
     return Vin * gain, gain
 

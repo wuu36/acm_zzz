@@ -5,7 +5,7 @@ D_MAX = 0.90
 def simulate_transient(Vin, D, R, L, C, RL, Vd, f,
                        mode="open_loop",
                        Vout_target=None, Kp=0.1, Ki=10.0,
-                       t_sim=10e-3, dt=1e-7):
+                       t_sim=50e-3, dt=1e-7):
     T = 1.0 / f
     N = int(t_sim / dt)
     steps_per_period = int(T / dt)
@@ -16,10 +16,10 @@ def simulate_transient(Vin, D, R, L, C, RL, Vd, f,
     switch_state = np.zeros(N)
     t = np.linspace(0, t_sim, N)
 
-    IL_init = Vin / (R * (1 - D)) * D * 0.5
-    vC_init = Vin + (Vin / (1 - D) - Vin) * 0.6
-    iL[0] = max(IL_init, 0.0)
-    vC[0] = max(vC_init, Vin)
+    from core.steady_state import solve_steady_state
+    ss = solve_steady_state(Vin, D, R, L, C, f, RL, Vd)
+    iL[0] = max(ss["IL_avg"] * 0.8, 0.0)
+    vC[0] = max(ss["Vout"], Vin)
 
     pi_integral = 0.0
     current_D = D
